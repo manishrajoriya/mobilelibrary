@@ -8,14 +8,15 @@ import MemberDashbord from '@/component/MemberDashbord';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import Sidebar from '@/component/Sidebar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import Onboarding from '@/component/Onbording';
 
 export default function Index() {
   return (
-    
-      <NavigationContainer>
-        <Sidebar />
-      </NavigationContainer>
    
+   <SafeAreaProvider>
+      <Onboarding />
+    </SafeAreaProvider>
   );
 }
 
