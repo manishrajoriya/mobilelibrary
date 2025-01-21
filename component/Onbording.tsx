@@ -50,7 +50,7 @@ const Onboarding: React.FC = () => {
 
   const handleGetStarted = () => {
     // Navigate to the main app or login screen
-    router.push("/(tabs)")
+    router.push("/auth")
     console.log("Get Started")
   }
 
