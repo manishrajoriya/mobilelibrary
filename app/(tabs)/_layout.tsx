@@ -4,8 +4,13 @@ import { Stack } from 'expo-router'
 
 const tabsLayout = () => {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="index" />
+    <Stack >
+    <Stack.Screen name="index" options={{ headerShown: false }}/>
+    <Stack.Screen name="addMemberForm" options={{ headerTitle: 'Add Member' }} />
+    <Stack.Screen name="memberProfileCard" options={{ headerTitle: 'Member Profile' }} />
+    {/* <Stack.Screen name="shiftForm" options={{ headerTitle: 'Add Shift' }} />
+    <Stack.Screen name="shiftDetails" options={{ headerTitle: 'Shift Details' }} /> */}
+    <Stack.Screen name="finance" options={{ headerTitle: 'Finance' }} />
   </Stack>
   )
 }

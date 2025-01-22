@@ -15,21 +15,25 @@ const ActionButton: React.FC<ActionButtonProps> = React.memo(({ icon, label, onP
   </TouchableOpacity>
 ))
 
-export const ActionButtons: React.FC = React.memo(() => (
-  <FlatList
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    style={styles.actionScrollView}
-    data={[
-      { icon: "edit-2", label: "Edit", onPress: () => {} },
-      { icon: "plus", label: "Add Pay", onPress: () => {} },
-      { icon: "refresh-ccw", label: "Renew", onPress: () => {} },
-      { icon: "file-plus", label: "Add Bill", onPress: () => {} },
-    ]}
-    renderItem={({ item }) => <ActionButton {...item} />}
-    keyExtractor={(item) => `action-${item.icon}`}
-  />
-))
+export const ActionButtons: React.FC = React.memo(() => {
+  const actionData: ActionButtonProps[] = [
+    { icon: "edit-2", label: "Edit", onPress: () => {} },
+    { icon: "plus", label: "Add Pay", onPress: () => {} },
+    { icon: "refresh-ccw", label: "Renew", onPress: () => {} },
+    { icon: "file-plus", label: "Add Bill", onPress: () => {} },
+  ]
+
+  return (
+    <FlatList
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.actionScrollView}
+      data={actionData}
+      renderItem={({ item }) => <ActionButton {...item} />}
+      keyExtractor={(item) => `action-${item.icon}`}
+    />
+  )
+})
 
 const styles = StyleSheet.create({
   actionScrollView: {

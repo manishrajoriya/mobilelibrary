@@ -6,11 +6,14 @@ import MemberProfileCard from "./MemberProfileCard"
 import ShiftForm from "./ShiftForm"
 import AddMemberForm from "./AddMemberForm"
 import ShiftDetails from "./ShiftDetails"
+import Finance from "./Finance"
+import { AuthProvider } from "@/firebase/authContext"
 
 const Drawer = createDrawerNavigator()
 
 const Sidebar = () => {
   return (
+    
     <Drawer.Navigator
       screenOptions={{
         drawerStyle: {
@@ -27,7 +30,9 @@ const Sidebar = () => {
       <Drawer.Screen name="ShiftForm" component={ShiftForm} />
       <Drawer.Screen name="AddMemberForm" component={AddMemberForm} />
       <Drawer.Screen name="ShiftDetails" component={ShiftDetails} />
+      <Drawer.Screen name="Finance" component={Finance} />
     </Drawer.Navigator>
+    
   )
 }
 

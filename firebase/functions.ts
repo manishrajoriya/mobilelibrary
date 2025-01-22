@@ -2,10 +2,11 @@
 import { db } from "@/utils/firebaseConfig";
 import { collection, addDoc,getDoc, where, query, getDocs, startAfter,
    type QueryDocumentSnapshot,
-  type DocumentData, limit, orderBy } from "firebase/firestore"; 
+  type DocumentData, limit, orderBy, 
+  or} from "firebase/firestore"; 
 import { auth } from "@/utils/firebaseConfig";
 import {getAuth, } from "firebase/auth"
-
+import { useAuth } from "./authContext";
 
 
 // Define the plan data type
@@ -146,6 +147,52 @@ export async function getMembers(lastVisible?: QueryDocumentSnapshot<DocumentDat
     return { members, lastVisibleDoc, hasMore }
   } catch (error: any) {
     console.error("Unable to get members:", error.message)
+    throw error
+  }
+}
+
+
+export async function totalMemberCount() {
+  try {
+    const currentUser = getAuth().currentUser
+    if (!currentUser) {
+      throw new Error("User not authenticated. Redirecting to sign-in...")
+    }
+    const q = query(collection(db, "members"), where("admin", "==", currentUser.uid),)
+    const membersSnapshot = await getDocs(q)
+    return membersSnapshot.size
+  } catch (error: any) {
+    console.error("Unable to get member count:", error.message)
+    throw error
+  }
+}
+
+export async function liveMemberCount() {
+  try {
+    const currentUser = getAuth().currentUser
+    if (!currentUser) {
+      throw new Error("User not authenticated. Redirecting to sign-in...")
+    }
+    const q = query(collection(db, "members"), where("admin", "==", currentUser.uid), where("status", "==", "Live"))
+    const membersSnapshot = await getDocs(q)
+    return membersSnapshot.size
+  } catch (error: any) {
+    console.error("Unable to get live member count:", error.message)
+    throw error
+  }
+}
+
+export async function InactiveMemberCount() {
+  try {
+    const currentUser = getAuth().currentUser
+    if (!currentUser) {
+      throw new Error("User not authenticated. Redirecting to sign-in...")
+    }
+    const q = query(collection(db, "members"), where("admin", "==", currentUser.uid), where("status", "==", "Inactive"))
+    const membersSnapshot = await getDocs(q)
+    return membersSnapshot.size
+  } catch (error: any) {
+    console.error("Unable to get inactive member count:", error.message)
     throw error
   }
 }

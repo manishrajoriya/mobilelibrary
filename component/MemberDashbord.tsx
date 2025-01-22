@@ -1,27 +1,52 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const StatCard = ({ icon, title, value, color }: { icon: any; title: string; value: string; color: string }) => (
-  <View style={styles.card}>
+import { totalMemberCount, liveMemberCount, InactiveMemberCount } from '@/firebase/functions';
+import { useRouter } from 'expo-router';
+const StatCard = ({ icon, title, value, color, style, onPress }: { icon: any; title: string; value: number; color: string; style: any; onPress: () => void }) => (
+  <View style={[styles.card, style]}>
     <View style={[styles.iconContainer, { backgroundColor: `${color}10` }]}>
       <Ionicons name={icon} size={24} color={color} />
     </View>
+    <TouchableOpacity onPress={onPress}>
     <Text style={styles.cardTitle}>{title}</Text>
+    </TouchableOpacity>
     <Text style={styles.cardValue}>{value}</Text>
   </View>
 );
 
 export default function MembersDashboard() {
+  const [member, setMember] = useState<number>(0);
+  const [liveMember, setLiveMember] = useState<number>(0);
+  const [inactiveMember, setInactiveMember] = useState<number>(0);
+
+  const router = useRouter();
+
+useEffect(() => {
+  const fetchMemberCount = async () => {
+    const count = await totalMemberCount();
+    setMember(count);
+
+    const liveCount = await liveMemberCount();
+    setLiveMember(liveCount);
+
+    const inactiveCount = await InactiveMemberCount();
+    setInactiveMember(inactiveCount);
+
+  };
+  fetchMemberCount();
+}, []);
+
+
   const stats = [
-    { icon: 'people', title: 'Total Members', value: '5', color: '#4285F4' },
-    { icon: 'people', title: 'Live Members', value: '5', color: '#34A853' },
-    { icon: 'person-remove', title: 'Inactive Members', value: '0', color: '#EA4335' },
-    { icon: 'card', title: 'Total Amount', value: '2600', color: '#4285F4' },
-    { icon: 'cash', title: 'Paid Amount', value: '1800', color: '#9C27B0' },
-    { icon: 'time', title: 'Due Amount', value: '800', color: '#FB8C00' },
-    { icon: 'trending-up', title: 'Total Expense', value: '1200', color: '#34A853' },
-    { icon: 'stats-chart', title: 'P&L', value: '600', color: '#EA4335' },
+    { icon: 'people', title: 'Total Members', value: member, color: '#4285F4' , style: {backgroundColor: '#fff'}, onPress: () => {router.push('/(tabs)/memberProfileCard')} },
+    { icon: 'people', title: 'Live Members', value: liveMember, color: '#34A853', style: {backgroundColor: '#fff'}, onPress: () => {router.push('/(tabs)/memberProfileCard')} },
+    { icon: 'person-remove', title: 'Inactive Members', value: inactiveMember, color: '#EA4335', style: {backgroundColor: '#fff'}, onPress: () => {router.push('/(tabs)/memberProfileCard')} },
+    { icon: 'card', title: 'Total Amount', value: 2600, color: '#4285F4', style: {backgroundColor: '#fff'}, onPress: () => {router.push('/(tabs)/memberProfileCard')} },
+    { icon: 'cash', title: 'Paid Amount', value: 1800, color: '#9C27B0', style: {backgroundColor: '#fff'}, onPress: () => {router.push('/(tabs)/memberProfileCard')} },
+    { icon: 'time', title: 'Due Amount', value: 800, color: '#FB8C00', style: {backgroundColor: '#fff'}, onPress: () => {router.push('/(tabs)/memberProfileCard')} },
+    { icon: 'trending-up', title: 'Total Expense', value: 1200, color: '#34A853', style: {backgroundColor: '#fff'}, onPress: () => {router.push('/(tabs)/financeScreen')} },
+    { icon: 'stats-chart', title: 'P&L', value: 600, color: '#EA4335', style: {backgroundColor: '#fff'}, onPress: () => {router.push('/(tabs)/financeScreen')} },
   ];
 
   return (
@@ -38,7 +63,7 @@ export default function MembersDashboard() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.addMemberButton}>
+      <TouchableOpacity style={styles.addMemberButton} onPress={() => {router.push('/(tabs)/addMemberForm')}}>
         <View style={styles.addIcon}>
           <Ionicons name="add" size={24} color="#666" />
         </View>
@@ -47,7 +72,9 @@ export default function MembersDashboard() {
 
       <View style={styles.statsGrid}>
         {stats.map((stat, index) => (
+          
           <StatCard key={index} {...stat} />
+          
         ))}
       </View>
     </ScrollView>
@@ -58,6 +85,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    // backgroundColor: '#e0f2e9',
   },
   header: {
     flexDirection: 'row',

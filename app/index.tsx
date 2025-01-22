@@ -5,6 +5,7 @@ import Toast from 'react-native-toast-message';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Onboarding from '@/component/Onbording';
 
+
 export default function Index() {
   return (
    
@@ -12,6 +13,7 @@ export default function Index() {
       <Onboarding />
       <Toast/>
     </SafeAreaProvider>
+ 
   );
 }
 
