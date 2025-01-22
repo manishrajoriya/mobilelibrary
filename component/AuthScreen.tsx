@@ -10,6 +10,7 @@ const AuthEmail: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // For checking initial auth state
   const router = useRouter();
+  
 
   // Check if the user is logged in when the component mounts
   useEffect(() => {

@@ -5,11 +5,13 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Sidebar from '@/component/Sidebar';
 import { useRouter } from 'expo-router';
 
+
 const Index = () => {
   const router = useRouter();
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Sidebar />
+      
     </GestureHandlerRootView>
   );
 }

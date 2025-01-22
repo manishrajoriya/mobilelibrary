@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,9 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { createPlan } from '@/firebase/functions';
+import { createPlan, getPlans } from '@/firebase/functions';
+import Toast from 'react-native-toast-message';
+
 
 interface FormData {
   name: string;
@@ -27,8 +29,20 @@ export default function ShiftForm() {
   const handleSubmit = async () => {
     // Handle form submission here
      await createPlan({ data: formData });
+     Toast.show({
+      type: 'success',
+      text1: 'Plan created successfully',
+    });
+    setFormData({
+      name: '',
+      description: '',
+      duration: '',
+      amount: '',
+    });
     console.log(formData);
   };
+
+
 
   return (
     <ScrollView style={styles.container}>
@@ -37,7 +51,7 @@ export default function ShiftForm() {
           <Text style={styles.label}>Name</Text>
           <TextInput
             style={styles.input}
-            placeholder="Shift Name"
+            placeholder="Plan Name"
             value={formData.name}
             onChangeText={(text) => setFormData({ ...formData, name: text })}
           />
@@ -80,6 +94,7 @@ export default function ShiftForm() {
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitButtonText}>Submit</Text>
         </TouchableOpacity>
+        <Toast/>
       </View>
     </ScrollView>
   );

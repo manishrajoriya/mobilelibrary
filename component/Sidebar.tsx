@@ -5,6 +5,7 @@ import MembersDashboard from "./MemberDashbord"
 import MemberProfileCard from "./MemberProfileCard"
 import ShiftForm from "./ShiftForm"
 import AddMemberForm from "./AddMemberForm"
+import ShiftDetails from "./ShiftDetails"
 
 const Drawer = createDrawerNavigator()
 
@@ -25,6 +26,7 @@ const Sidebar = () => {
       <Drawer.Screen name="Profile" component={MemberProfileCard} />
       <Drawer.Screen name="ShiftForm" component={ShiftForm} />
       <Drawer.Screen name="AddMemberForm" component={AddMemberForm} />
+      <Drawer.Screen name="ShiftDetails" component={ShiftDetails} />
     </Drawer.Navigator>
   )
 }
