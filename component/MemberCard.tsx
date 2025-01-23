@@ -61,7 +61,7 @@ const MemberCard: React.FC<{ member: MemberDetails }> = React.memo(
 
         <View style={styles.planSection}>
           {[
-            { label: "Plan", value: member.planId || "N/A" },
+            { label: "Plan", value: member.planName || "N/A" },
             { label: "Join Date", value: formatDate(member.addmissionDate) },
             { label: "End Date", value: formatDate(member.expiryDate) },
           ].map(({ label, value }) => (

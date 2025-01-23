@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { totalMemberCount, liveMemberCount, InactiveMemberCount } from '@/firebase/functions';
 import { useRouter } from 'expo-router';
+
 const StatCard = ({ icon, title, value, color, style, onPress }: { icon: any; title: string; value: number; color: string; style: any; onPress: () => void }) => (
   <View style={[styles.card, style]}>
     <View style={[styles.iconContainer, { backgroundColor: `${color}10` }]}>
@@ -51,6 +52,7 @@ useEffect(() => {
 
   return (
     <ScrollView style={styles.container}>
+     
       <View style={styles.header}>
         <View style={styles.profileSection}>
           <View style={styles.avatar}>

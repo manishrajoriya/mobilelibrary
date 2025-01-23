@@ -3,7 +3,10 @@ import { db } from "@/utils/firebaseConfig";
 import { collection, addDoc,getDoc, where, query, getDocs, startAfter,
    type QueryDocumentSnapshot,
   type DocumentData, limit, orderBy, 
-  or} from "firebase/firestore"; 
+  or,
+  updateDoc,
+  doc,
+  deleteDoc} from "firebase/firestore"; 
 import { auth } from "@/utils/firebaseConfig";
 import {getAuth, } from "firebase/auth"
 import { useAuth } from "./authContext";
@@ -64,6 +67,62 @@ export async function getPlans() {
   }
 }
 
+export async function getPlanById({ id }: { id: string }) {
+  try {
+    const planRef = doc(db, 'plans', id);
+    const planSnapshot = await getDoc(planRef);
+    
+    if (!planSnapshot.exists()) {
+      throw new Error('Plan not found');
+    }
+    
+    const planData = planSnapshot.data();
+    console.log('Plan fetched successfully:', { id, name: planData.name });
+    return { id, name: planData.name, description: planData.description, duration: planData.duration, amount: planData.amount };
+  } catch (error: any) {
+    console.error('Unable to get plan:', error.message);
+    throw error; // Re-throw the error for handling by the caller
+  }
+}
+
+export async function updatePlan({ id, data }: { id: string, data: PlanData }) {
+  try {
+    // Get the current user
+    const currentUser =  getAuth().currentUser
+    if (!currentUser) {
+      throw new Error('User not authenticated. Redirecting to sign-in...');
+    }
+
+    // Update the plan in the Firestore database
+    const planRef = doc(db, 'plans', id);
+    await updateDoc(planRef, data);
+    console.log('Plan updated successfully:', { id, ...data });
+    return { id, ...data };
+  } catch (error: any) {
+    console.error('Unable to update plan:', error.message);
+    throw error; // Re-throw the error for handling by the caller
+  }
+}
+
+export async function deletePlan({ id }: { id: string }) {
+  try {
+    // Get the current user
+    const currentUser =  getAuth().currentUser
+    if (!currentUser) {
+      throw new Error('User not authenticated. Redirecting to sign-in...');
+    }
+
+    // Delete the plan from the Firestore database
+    const planRef = doc(db, 'plans', id);
+    await deleteDoc(planRef);
+    console.log('Plan deleted successfully:', id);
+    return id;
+  } catch (error: any) {
+    console.error('Unable to delete plan:', error.message);
+    throw error; // Re-throw the error for handling by the caller
+  }
+}
+
 export async function addMember({ data }: { data: any }) {
   try {
     // Get the current user
@@ -89,6 +148,7 @@ export async function addMember({ data }: { data: any }) {
         totalAmount: data?.totalAmount,
         paidAmount: data?.paidAmount,
         planId: data?.planId,
+        planName: data?.planName,
         createdAt: new Date(),
         updatedAt: new Date()
    });
@@ -139,6 +199,9 @@ export async function getMembers(lastVisible?: QueryDocumentSnapshot<DocumentDat
       totalAmount: doc.data().totalAmount,
       paidAmount: doc.data().paidAmount,
       planId: doc.data().planId,
+      planName: doc.data().planName,
+      createdAt: doc.data().createdAt,
+      updatedAt: doc.data().updatedAt
     }))
 
     const lastVisibleDoc = membersSnapshot.docs[membersSnapshot.docs.length - 1]

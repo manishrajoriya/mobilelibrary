@@ -192,6 +192,7 @@ export default function Finance() {
 
   return (
     <View style={styles.container}>
+      
       <Text style={styles.header}>Earnings & Expenses Tracker</Text>
       <Text style={styles.balance}>
         Balance: ₹{calculateTotal().toFixed(2)}

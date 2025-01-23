@@ -1,12 +1,23 @@
-import React, { useState } from "react"
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Platform, Alert, ActivityIndicator } from "react-native"
+import React, { useEffect, useState } from "react"
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  Alert,
+  ActivityIndicator,
+} from "react-native"
+import { useForm, Controller } from "react-hook-form"
 import DateTimePicker from "@react-native-community/datetimepicker"
 import { Picker } from "@react-native-picker/picker"
-import { addMember } from "@/firebase/functions"
+import { addMember, getPlans, getPlanById } from "@/firebase/functions"
 import Toast from "react-native-toast-message"
 import * as ImagePicker from "expo-image-picker"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { storage } from "@/utils/firebaseConfig" // Make sure this import is correct for your project structure
+import { storage } from "@/utils/firebaseConfig"
 
 interface FormData {
   fullName: string
@@ -26,58 +37,75 @@ interface FormData {
   planId: string
 }
 
+type PlanData = {
+  id: string
+  name: string
+  description: string | null
+  duration: string
+  amount: string
+}
+
 export default function AddMemberForm() {
-  const [formData, setFormData] = useState<FormData>({
-    fullName: "",
-    address: "",
-    contactNumber: "",
-    email: "",
-    plan: "",
-    totalAmount: "",
-    profileImage: "",
-    document: "",
-    paidAmount: "",
-    dueAmount: "",
-    admissionDate: new Date(),
-    expiryDate: new Date(),
-    status: "Live",
-    seatNumber: "",
-    planId: "",
+  const { control, handleSubmit, setValue, watch } = useForm<FormData>({
+    defaultValues: {
+      fullName: "",
+      address: "",
+      contactNumber: "",
+      email: "",
+      plan: "",
+      totalAmount: "",
+      paidAmount: "",
+      dueAmount: "",
+      profileImage: "",
+      document: "",
+      admissionDate: new Date(),
+      expiryDate: new Date(),
+      status: "Live",
+      seatNumber: "",
+      planId: "",
+    },
   })
 
   const [showAdmissionDate, setShowAdmissionDate] = useState(false)
   const [showExpiryDate, setShowExpiryDate] = useState(false)
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
+  const [plans, setPlans] = useState<PlanData[]>([])
+  const [selectedPlan, setSelectedPlan] = useState<PlanData | null>(null)
 
-
-  const plans = ["Basic", "Standard", "Premium"]
   const statusOptions = ["Live", "Pending", "Expired"]
 
-  const handleSubmit = async () => {
+  useEffect(() => {
+    const fetchPlans = async () => {
+      const plansData = await getPlans()
+      setPlans(plansData)
+    }
+    fetchPlans()
+  }, [])
+
+  useEffect(() => {
+    const planId = watch("planId")
+    if (planId) {
+      const fetchPlan = async () => {
+        const planData = await getPlanById({ id: planId })
+        setSelectedPlan(planData)
+        setValue("totalAmount", planData.amount)
+      }
+      fetchPlan()
+    }
+  }, [watch("planId")])
+
+  const onSubmit = async (data: FormData) => {
     try {
-      await addMember({ data: formData })
-      console.log(formData)
+      await addMember({ data })
       Toast.show({
         type: "success",
         text1: "Member added successfully",
       })
-      setFormData({
-        fullName: "",
-        address: "",
-        contactNumber: "",
-        email: "",
-        plan: "",
-        totalAmount: "",
-        paidAmount: "",
-        profileImage: "",
-        document: "",
-        dueAmount: "",
-        admissionDate: new Date(),
-        expiryDate: new Date(),
-        status: "Live",
-        seatNumber: "",
-        planId: "",
-      })
+      // Reset form
+      Object.keys(data).forEach((key) => setValue(key as keyof FormData, ""))
+      setValue("admissionDate", new Date())
+      setValue("expiryDate", new Date())
+      setValue("status", "Live")
     } catch (error) {
       console.error("Error adding member: ", error)
       Toast.show({
@@ -96,124 +124,31 @@ export default function AddMemberForm() {
     })
   }
 
-  const pickImage = async () => {
-    // Ask for camera and media library permissions
-    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync()
-    const mediaLibraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync()
-
-    if (!cameraPermission.granted || !mediaLibraryPermission.granted) {
-      Alert.alert("Permission Required", "Camera and media library permissions are required!")
+  const pickImage = async (field: "profileImage" | "document") => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Camera roll permissions are required!")
       return
     }
 
-    // Show action sheet to choose between camera and library
-    Alert.alert("Select Image Source", "Choose the source of your image", [
-      {
-        text: "Camera",
-        onPress: () => launchCamera(),
-      },
-      {
-        text: "Photo Library",
-        onPress: () => launchImageLibrary(),
-      },
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-    ])
-  }
-
-  const launchCamera = async () => {
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     })
 
-    handleImagePickerResult(result)
-  }
-
-  const launchImageLibrary = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    })
-
-    handleImagePickerResult(result)
-  }
-
-  const handleImagePickerResult = async (result: ImagePicker.ImagePickerResult) => {
-  if (!result.canceled && result.assets && result.assets.length > 0) {
-    setIsLoading(true); // Start loading
-    try {
-      const uploadedUrl = await uploadImageToFirebase(result.assets[0].uri);
-      setFormData({ ...formData, profileImage: uploadedUrl });
-    } catch (error) {
-      console.error("Image upload failed", error);
-      Alert.alert("Upload Error", "Failed to upload image.");
-    } finally {
-      setIsLoading(false); // Stop loading
-    }
-  }
-};
-
-
-  const pickDocument = async () => {
-    // Ask for camera and media library permissions
-    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync()
-    const mediaLibraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync()
-
-    if (!cameraPermission.granted || !mediaLibraryPermission.granted) {
-      Alert.alert("Permission Required", "Camera and media library permissions are required!")
-      return
-    }
-
-    // Show action sheet to choose between camera and library
-    Alert.alert("Select Document Source", "Choose the source of your document", [
-      {
-        text: "Camera",
-        onPress: () => launchCameraForDocument(),
-      },
-      {
-        text: "Photo Library",
-        onPress: () => launchImageLibraryForDocument(),
-      },
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-    ])
-  }
-
-  const launchCameraForDocument = async () => {
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: false,
-      aspect: [4, 3],
-      quality: 1,
-    })
-
-    handleDocumentPickerResult(result)
-  }
-
-  const launchImageLibraryForDocument = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: false,
-      aspect: [4, 3],
-      quality: 1,
-    })
-
-    handleDocumentPickerResult(result)
-  }
-
-  const handleDocumentPickerResult = async (result: ImagePicker.ImagePickerResult) => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      const uploadedUrl = await uploadImageToFirebase(result.assets[0].uri)
-      setFormData({ ...formData, document: uploadedUrl })
+      setIsLoading(true)
+      try {
+        const uploadedUrl = await uploadImageToFirebase(result.assets[0].uri)
+        setValue(field, uploadedUrl)
+      } catch (error) {
+        console.error("Image upload failed", error)
+        Alert.alert("Upload Error", "Failed to upload image.")
+      } finally {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -225,219 +160,336 @@ export default function AddMemberForm() {
 
     try {
       const snapshot = await uploadBytes(storageRef, blob)
-      const downloadURL = await getDownloadURL(snapshot.ref)
-      return downloadURL
+      return await getDownloadURL(snapshot.ref)
     } catch (error: any) {
       console.error("Error uploading image: ", error)
-      if (error.code === "storage/unauthorized") {
-        Alert.alert(
-          "Upload Error",
-          "You don't have permission to upload images. The image will be stored locally for now.",
-          [{ text: "OK" }],
-        )
-      } else {
-        Alert.alert("Upload Error", "Failed to upload image. The image will be stored locally for now.", [
-          { text: "OK" },
-        ])
-      }
-      return uri // Return the local URI as a fallback
+      Alert.alert("Upload Error", "Failed to upload image. The image will be stored locally for now.")
+      return uri
     }
   }
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.formContainer}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Full Name"
-            value={formData.fullName}
-            onChangeText={(text) => setFormData({ ...formData, fullName: text })}
-          />
-        </View>
+        <Controller
+          control={control}
+          rules={{ required: "Name is required" }}
+          render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Name</Text>
+              <TextInput
+                style={[styles.input, error && styles.inputError]}
+                placeholder="Full Name"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+              />
+              {error && <Text style={styles.errorText}>{error.message}</Text>}
+            </View>
+          )}
+          name="fullName"
+        />
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Address</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Address"
-            value={formData.address}
-            onChangeText={(text) => setFormData({ ...formData, address: text })}
-          />
-        </View>
+        <Controller
+          control={control}
+          rules={{ required: "Address is required" }}
+          render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Address</Text>
+              <TextInput
+                style={[styles.input, error && styles.inputError]}
+                placeholder="Address"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+              />
+              {error && <Text style={styles.errorText}>{error.message}</Text>}
+            </View>
+          )}
+          name="address"
+        />
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Contact Number</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Contact Number"
-            keyboardType="phone-pad"
-            value={formData.contactNumber}
-            onChangeText={(text) => setFormData({ ...formData, contactNumber: text })}
-          />
-        </View>
+        <Controller
+          control={control}
+          rules={{ required: "Contact number is required" }}
+          render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Contact Number</Text>
+              <TextInput
+                style={[styles.input, error && styles.inputError]}
+                placeholder="Contact Number"
+                keyboardType="phone-pad"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+              />
+              {error && <Text style={styles.errorText}>{error.message}</Text>}
+            </View>
+          )}
+          name="contactNumber"
+        />
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={formData.email}
-            onChangeText={(text) => setFormData({ ...formData, email: text })}
-          />
-        </View>
+        <Controller
+          control={control}
+          rules={{
+            required: "Email is required",
+            pattern: {
+              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+              message: "Invalid email address",
+            },
+          }}
+          render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={[styles.input, error && styles.inputError]}
+                placeholder="Email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+              />
+              {error && <Text style={styles.errorText}>{error.message}</Text>}
+            </View>
+          )}
+          name="email"
+        />
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Plan</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={formData.plan}
-              onValueChange={(value) => setFormData({ ...formData, plan: value })}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select Plan" value="" />
-              {plans.map((plan) => (
-                <Picker.Item key={plan} label={plan} value={plan} />
-              ))}
-            </Picker>
-          </View>
-        </View>
+        <Controller
+          control={control}
+          rules={{ required: "Plan is required" }}
+          render={({ field: { onChange, value }, fieldState: { error } }) => (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Plan</Text>
+              <View style={[styles.pickerContainer, error && styles.inputError]}>
+                <Picker
+                  selectedValue={value}
+                  onValueChange={(itemValue, itemIndex) => {
+                    onChange(itemValue)
+                    setValue("planId", plans[itemIndex - 1]?.id || "")
+                  }}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Select Plan" value="" />
+                  {plans.map((plan) => (
+                    <Picker.Item key={plan.id} label={plan.name} value={plan.name} />
+                  ))}
+                </Picker>
+              </View>
+              {error && <Text style={styles.errorText}>{error.message}</Text>}
+            </View>
+          )}
+          name="plan"
+        />
 
         <View style={styles.row}>
-          <View style={[styles.inputGroup, styles.flex1]}>
-            <Text style={styles.label}>Total Amount</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="0.00"
-              keyboardType="numeric"
-              value={formData.totalAmount}
-              onChangeText={(text) => setFormData({ ...formData, totalAmount: text })}
-            />
-          </View>
+          <Controller
+            control={control}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={[styles.inputGroup, styles.flex1]}>
+                <Text style={styles.label}>Total Amount</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="0.00"
+                  keyboardType="numeric"
+                  editable={false}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                />
+              </View>
+            )}
+            name="totalAmount"
+          />
 
-          <View style={[styles.inputGroup, styles.flex1]}>
-            <Text style={styles.label}>Paid Amount</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="0.00"
-              keyboardType="numeric"
-              value={formData.paidAmount}
-              onChangeText={(text) => setFormData({ ...formData, paidAmount: text })}
-            />
-          </View>
+          <Controller
+            control={control}
+            rules={{ required: "Paid amount is required" }}
+            render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+              <View style={[styles.inputGroup, styles.flex1]}>
+                <Text style={styles.label}>Paid Amount</Text>
+                <TextInput
+                  style={[styles.input, error && styles.inputError]}
+                  placeholder="0.00"
+                  keyboardType="numeric"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                />
+                {error && <Text style={styles.errorText}>{error.message}</Text>}
+              </View>
+            )}
+            name="paidAmount"
+          />
 
-          <View style={[styles.inputGroup, styles.flex1]}>
-            <Text style={styles.label}>Due Amount</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="0.00"
-              keyboardType="numeric"
-              value={formData.dueAmount}
-              onChangeText={(text) => setFormData({ ...formData, dueAmount: text })}
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Admission Date</Text>
-          <TouchableOpacity style={styles.dateButton} onPress={() => setShowAdmissionDate(true)}>
-            <Text>{formatDate(formData.admissionDate)}</Text>
-          </TouchableOpacity>
-          {showAdmissionDate && (
-            <DateTimePicker
-              value={formData.admissionDate}
-              mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={(event, selectedDate) => {
-                setShowAdmissionDate(false)
-                if (selectedDate) {
-                  setFormData({ ...formData, admissionDate: selectedDate })
-                }
-              }}
-            />
-          )}
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Expiry Date</Text>
-          <TouchableOpacity style={styles.dateButton} onPress={() => setShowExpiryDate(true)}>
-            <Text>{formatDate(formData.expiryDate)}</Text>
-          </TouchableOpacity>
-          {showExpiryDate && (
-            <DateTimePicker
-              value={formData.expiryDate}
-              mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={(event, selectedDate) => {
-                setShowExpiryDate(false)
-                if (selectedDate) {
-                  setFormData({ ...formData, expiryDate: selectedDate })
-                }
-              }}
-            />
-          )}
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Status</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={formData.status}
-              onValueChange={(value) => setFormData({ ...formData, status: value })}
-              style={styles.picker}
-            >
-              {statusOptions.map((status) => (
-                <Picker.Item key={status} label={status} value={status} />
-              ))}
-            </Picker>
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Seat Number</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Seat Number"
-            keyboardType="numeric"
-            value={formData.seatNumber}
-            onChangeText={(text) => setFormData({ ...formData, seatNumber: text })}
+          <Controller
+            control={control}
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={[styles.inputGroup, styles.flex1]}>
+                <Text style={styles.label}>Due Amount</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="0.00"
+                  keyboardType="numeric"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                />
+              </View>
+            )}
+            name="dueAmount"
           />
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Profile Image</Text>
-          <TouchableOpacity style={styles.uploadButton} onPress={pickImage} disabled={isLoading}>
-            <Text style={styles.uploadButtonText}>{formData.profileImage ? "Change Image" : "Upload Image"}</Text>
-          </TouchableOpacity>
-          {isLoading && <ActivityIndicator size="large" color="#0f172a" />}
-          {formData.profileImage && (
-            <Text style={styles.fileName}>
-              {formData.profileImage.startsWith("http") ? "Image uploaded to cloud" : "Image stored locally"}
-            </Text>
+        <Controller
+          control={control}
+          rules={{ required: "Admission date is required" }}
+          render={({ field: { onChange, value }, fieldState: { error } }) => (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Admission Date</Text>
+              <TouchableOpacity
+                style={[styles.dateButton, error && styles.inputError]}
+                onPress={() => setShowAdmissionDate(true)}
+              >
+                <Text>{formatDate(value)}</Text>
+              </TouchableOpacity>
+              {showAdmissionDate && (
+                <DateTimePicker
+                  value={value}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={(event, selectedDate) => {
+                    setShowAdmissionDate(false)
+                    if (selectedDate) {
+                      onChange(selectedDate)
+                    }
+                  }}
+                />
+              )}
+              {error && <Text style={styles.errorText}>{error.message}</Text>}
+            </View>
           )}
-        </View>
+          name="admissionDate"
+        />
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Document</Text>
-          <TouchableOpacity style={styles.uploadButton} onPress={pickDocument} disabled={isLoading}>
-            <Text style={styles.uploadButtonText}>{formData.document ? "Change Document" : "Upload Document"}</Text>
-          </TouchableOpacity>
-          {isLoading && <ActivityIndicator size="large" color="#0f172a" />}
-          {formData.document && (
-            <Text style={styles.fileName}>
-              {formData.document.startsWith("http") ? "Document uploaded to cloud" : "Document stored locally"}
-            </Text>
+        <Controller
+          control={control}
+          rules={{ required: "Expiry date is required" }}
+          render={({ field: { onChange, value }, fieldState: { error } }) => (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Expiry Date</Text>
+              <TouchableOpacity
+                style={[styles.dateButton, error && styles.inputError]}
+                onPress={() => setShowExpiryDate(true)}
+              >
+                <Text>{formatDate(value)}</Text>
+              </TouchableOpacity>
+              {showExpiryDate && (
+                <DateTimePicker
+                  value={value}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={(event, selectedDate) => {
+                    setShowExpiryDate(false)
+                    if (selectedDate) {
+                      onChange(selectedDate)
+                    }
+                  }}
+                />
+              )}
+              {error && <Text style={styles.errorText}>{error.message}</Text>}
+            </View>
           )}
-        </View>
+          name="expiryDate"
+        />
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isLoading}>
+        <Controller
+          control={control}
+          rules={{ required: "Status is required" }}
+          render={({ field: { onChange, value }, fieldState: { error } }) => (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Status</Text>
+              <View style={[styles.pickerContainer, error && styles.inputError]}>
+                <Picker selectedValue={value} onValueChange={onChange} style={styles.picker}>
+                  {statusOptions.map((status) => (
+                    <Picker.Item key={status} label={status} value={status} />
+                  ))}
+                </Picker>
+              </View>
+              {error && <Text style={styles.errorText}>{error.message}</Text>}
+            </View>
+          )}
+          name="status"
+        />
+
+        <Controller
+          control={control}
+          rules={{ required: "Seat number is required" }}
+          render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Seat Number</Text>
+              <TextInput
+                style={[styles.input, error && styles.inputError]}
+                placeholder="Seat Number"
+                keyboardType="numeric"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+              />
+              {error && <Text style={styles.errorText}>{error.message}</Text>}
+            </View>
+          )}
+          name="seatNumber"
+        />
+
+        <Controller
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Profile Image</Text>
+              <TouchableOpacity
+                style={styles.uploadButton}
+                onPress={() => pickImage("profileImage")}
+                disabled={isLoading}
+              >
+                <Text style={styles.uploadButtonText}>{value ? "Change Image" : "Upload Image"}</Text>
+              </TouchableOpacity>
+              {isLoading && <ActivityIndicator size="large" color="#0f172a" />}
+              {value && (
+                <Text style={styles.fileName}>
+                  {value.startsWith("http") ? "Image uploaded to cloud" : "Image stored locally"}
+                </Text>
+              )}
+            </View>
+          )}
+          name="profileImage"
+        />
+
+        <Controller
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Document</Text>
+              <TouchableOpacity style={styles.uploadButton} onPress={() => pickImage("document")} disabled={isLoading}>
+                <Text style={styles.uploadButtonText}>{value ? "Change Document" : "Upload Document"}</Text>
+              </TouchableOpacity>
+              {isLoading && <ActivityIndicator size="large" color="#0f172a" />}
+              {value && (
+                <Text style={styles.fileName}>
+                  {value.startsWith("http") ? "Document uploaded to cloud" : "Document stored locally"}
+                </Text>
+              )}
+            </View>
+          )}
+          name="document"
+        />
+
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit(onSubmit)} disabled={isLoading}>
           <Text style={styles.submitButtonText}>Submit</Text>
         </TouchableOpacity>
-        <Toast />
       </View>
+      <Toast />
     </ScrollView>
   )
 }
@@ -445,7 +497,7 @@ export default function AddMemberForm() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f9fafb",
   },
   formContainer: {
     padding: 20,
@@ -454,29 +506,48 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 8,
-    color: "#333",
+    color: "#4b5563",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#e1e1e1",
+    borderColor: "#d1d5db",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  inputError: {
+    borderColor: "#ef4444",
+  },
+  errorText: {
+    color: "#ef4444",
+    fontSize: 12,
+    marginTop: 4,
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: "#e1e1e1",
+    borderColor: "#d1d5db",
     borderRadius: 8,
     backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 4,
+    elevation: 2,
   },
   picker: {
     height: 50,
   },
   row: {
     flexDirection: "row",
+    justifyContent: "space-between",
     gap: 10,
   },
   flex1: {
@@ -484,17 +555,25 @@ const styles = StyleSheet.create({
   },
   dateButton: {
     borderWidth: 1,
-    borderColor: "#e1e1e1",
+    borderColor: "#d1d5db",
     borderRadius: 8,
     padding: 12,
     backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 4,
+    elevation: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   submitButton: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#3b82f6",
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 20,
   },
   submitButtonText: {
     color: "#fff",
@@ -502,19 +581,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   uploadButton: {
-    backgroundColor: "#e1e1e1",
+    backgroundColor: "#e5e7eb",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
   },
   uploadButtonText: {
     fontSize: 16,
-    color: "#333",
+    color: "#1f2937",
   },
   fileName: {
     marginTop: 8,
     fontSize: 14,
-    color: "#666",
+    color: "#6b7280",
   },
 })
 

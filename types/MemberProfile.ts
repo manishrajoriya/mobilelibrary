@@ -14,5 +14,8 @@ export interface MemberDetails {
   seatNumber: string
   status: string
   totalAmount: string
+  planName?: string
+  createdAt?: Date
+  updatedAt?: Date
 }
 

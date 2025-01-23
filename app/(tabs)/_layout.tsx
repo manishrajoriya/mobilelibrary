@@ -10,7 +10,7 @@ const tabsLayout = () => {
     <Stack.Screen name="memberProfileCard" options={{ headerTitle: 'Member Profile' }} />
     {/* <Stack.Screen name="shiftForm" options={{ headerTitle: 'Add Shift' }} />
     <Stack.Screen name="shiftDetails" options={{ headerTitle: 'Shift Details' }} /> */}
-    <Stack.Screen name="finance" options={{ headerTitle: 'Finance' }} />
+    <Stack.Screen name="financeScreen" options={{ headerTitle: 'Finance' }} />
   </Stack>
   )
 }
