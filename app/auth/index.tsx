@@ -1,14 +1,14 @@
-import { View, Text } from 'react-native'
-import React from 'react'
-import AuthNumber from '@/component/AuthNumber'
-import AuthEmail from '@/component/AuthScreen'
+import React from 'react';
+import { StyleSheet, View, Text } from 'react-native';
 
-const index = () => {
+const Index = () => {
   return (
-   
-      <AuthEmail/>
-   
-  )
+    <View>
+      <Text>Login</Text>
+    </View>
+  );
 }
 
-export default index
+const styles = StyleSheet.create({})
+
+export default Index;

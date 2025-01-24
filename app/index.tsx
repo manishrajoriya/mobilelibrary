@@ -1,22 +1,28 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import Toast from 'react-native-toast-message';
+import React from "react"
+import { NavigationContainer, NavigationIndependentTree } from "@react-navigation/native"
+import { createNativeStackNavigator } from "@react-navigation/native-stack"
+import { LoginScreen } from "@/component/AuthScreen"
+import MembersDashboard from "@/component/MemberDashbord"
+import { useAuth } from "@/firebase/auth"
+import Sidebar from "@/component/Sidebar"
 
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import Onboarding from '@/component/Onbording';
+const Stack = createNativeStackNavigator()
 
+export default function App() {
+  const { user } = useAuth()
 
-export default function Index() {
   return (
-   
-   <SafeAreaProvider>
-      <Onboarding />
-      <Toast/>
-    </SafeAreaProvider>
- 
-  );
+    <NavigationIndependentTree>
+    <NavigationContainer>
+      <Stack.Navigator>
+        {user ? (
+          <Stack.Screen name="Home" component={Sidebar} options={{ headerShown: false }} />
+        ) : (
+          <Stack.Screen name="Login" component={LoginScreen} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+    </NavigationIndependentTree>
+  )
 }
-
-const styles = StyleSheet.create({})
-
 

@@ -24,7 +24,6 @@ interface FormData {
   address: string
   contactNumber: string
   email: string
-  plan: string
   totalAmount: string
   paidAmount: string
   dueAmount: string
@@ -35,9 +34,10 @@ interface FormData {
   status: string
   seatNumber: string
   planId: string
+  planName: string
 }
 
-type PlanData = {
+type PlansData = {
   id: string
   name: string
   description: string | null
@@ -52,7 +52,7 @@ export default function AddMemberForm() {
       address: "",
       contactNumber: "",
       email: "",
-      plan: "",
+     
       totalAmount: "",
       paidAmount: "",
       dueAmount: "",
@@ -63,14 +63,16 @@ export default function AddMemberForm() {
       status: "Live",
       seatNumber: "",
       planId: "",
+      planName: "",
     },
   })
 
   const [showAdmissionDate, setShowAdmissionDate] = useState(false)
   const [showExpiryDate, setShowExpiryDate] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [plans, setPlans] = useState<PlanData[]>([])
-  const [selectedPlan, setSelectedPlan] = useState<PlanData | null>(null)
+  const [plans, setPlans] = useState<PlansData[]>([])
+  const [selectedPlan, setSelectedPlan] = useState<string>("")
+
 
   const statusOptions = ["Live", "Pending", "Expired"]
 
@@ -83,16 +85,14 @@ export default function AddMemberForm() {
   }, [])
 
   useEffect(() => {
-    const planId = watch("planId")
-    if (planId) {
-      const fetchPlan = async () => {
-        const planData = await getPlanById({ id: planId })
-        setSelectedPlan(planData)
-        setValue("totalAmount", planData.amount)
-      }
-      fetchPlan()
+    if (selectedPlan.length === 0) return
+    const fetchPlan = async () => {
+      const planData = await getPlanById({ id: selectedPlan })
+      setValue("totalAmount", planData.amount)
+      setValue("planId", selectedPlan)
     }
-  }, [watch("planId")])
+    fetchPlan()
+  }, [selectedPlan, setValue,])
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -124,25 +124,59 @@ export default function AddMemberForm() {
     })
   }
 
-  const pickImage = async (field: "profileImage" | "document") => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "Camera roll permissions are required!")
+  const pickImage = async () => {
+    const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync()
+    const { status: mediaLibraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+
+    if (cameraStatus !== "granted" || mediaLibraryStatus !== "granted") {
+      Alert.alert("Permission Required", "Camera and media library permissions are required!")
       return
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    Alert.alert("Select Image Source", "Choose the source of your image", [
+      {
+        text: "Camera",
+        onPress: () => launchCamera(),
+      },
+      {
+        text: "Photo Library",
+        onPress: () => launchImageLibrary(),
+      },
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+    ])
+  }
+
+  const launchCamera = async () => {
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     })
 
+    handleImagePickerResult(result)
+  }
+
+  const launchImageLibrary = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    })
+
+    handleImagePickerResult(result)
+  }
+
+  const handleImagePickerResult = async (result: ImagePicker.ImagePickerResult) => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setIsLoading(true)
       try {
         const uploadedUrl = await uploadImageToFirebase(result.assets[0].uri)
-        setValue(field, uploadedUrl)
+        setValue("profileImage", uploadedUrl)
       } catch (error) {
         console.error("Image upload failed", error)
         Alert.alert("Upload Error", "Failed to upload image.")
@@ -160,10 +194,21 @@ export default function AddMemberForm() {
 
     try {
       const snapshot = await uploadBytes(storageRef, blob)
-      return await getDownloadURL(snapshot.ref)
+      const downloadURL = await getDownloadURL(snapshot.ref)
+      return downloadURL
     } catch (error: any) {
       console.error("Error uploading image: ", error)
-      Alert.alert("Upload Error", "Failed to upload image. The image will be stored locally for now.")
+      if (error.code === "storage/unauthorized") {
+        Alert.alert(
+          "Upload Error",
+          "You don't have permission to upload images. The image will be stored locally for now.",
+          [{ text: "OK" }],
+        )
+      } else {
+        Alert.alert("Upload Error", "Failed to upload image. The image will be stored locally for now.", [
+          { text: "OK" },
+        ])
+      }
       return uri
     }
   }
@@ -173,18 +218,16 @@ export default function AddMemberForm() {
       <View style={styles.formContainer}>
         <Controller
           control={control}
-          rules={{ required: "Name is required" }}
-          render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+          render={({ field: { onChange, onBlur, value } }) => (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Name</Text>
               <TextInput
-                style={[styles.input, error && styles.inputError]}
+                style={styles.input}
                 placeholder="Full Name"
                 onBlur={onBlur}
                 onChangeText={onChange}
                 value={value}
               />
-              {error && <Text style={styles.errorText}>{error.message}</Text>}
             </View>
           )}
           name="fullName"
@@ -192,18 +235,16 @@ export default function AddMemberForm() {
 
         <Controller
           control={control}
-          rules={{ required: "Address is required" }}
-          render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+          render={({ field: { onChange, onBlur, value } }) => (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Address</Text>
               <TextInput
-                style={[styles.input, error && styles.inputError]}
+                style={styles.input}
                 placeholder="Address"
                 onBlur={onBlur}
                 onChangeText={onChange}
                 value={value}
               />
-              {error && <Text style={styles.errorText}>{error.message}</Text>}
             </View>
           )}
           name="address"
@@ -211,19 +252,17 @@ export default function AddMemberForm() {
 
         <Controller
           control={control}
-          rules={{ required: "Contact number is required" }}
-          render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+          render={({ field: { onChange, onBlur, value } }) => (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Contact Number</Text>
               <TextInput
-                style={[styles.input, error && styles.inputError]}
+                style={styles.input}
                 placeholder="Contact Number"
                 keyboardType="phone-pad"
                 onBlur={onBlur}
                 onChangeText={onChange}
                 value={value}
               />
-              {error && <Text style={styles.errorText}>{error.message}</Text>}
             </View>
           )}
           name="contactNumber"
@@ -231,18 +270,11 @@ export default function AddMemberForm() {
 
         <Controller
           control={control}
-          rules={{
-            required: "Email is required",
-            pattern: {
-              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-              message: "Invalid email address",
-            },
-          }}
-          render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+          render={({ field: { onChange, onBlur, value } }) => (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <TextInput
-                style={[styles.input, error && styles.inputError]}
+                style={styles.input}
                 placeholder="Email"
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -250,7 +282,6 @@ export default function AddMemberForm() {
                 onChangeText={onChange}
                 value={value}
               />
-              {error && <Text style={styles.errorText}>{error.message}</Text>}
             </View>
           )}
           name="email"
@@ -258,16 +289,16 @@ export default function AddMemberForm() {
 
         <Controller
           control={control}
-          rules={{ required: "Plan is required" }}
-          render={({ field: { onChange, value }, fieldState: { error } }) => (
+          render={({ field: { onChange, value } }) => (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Plan</Text>
-              <View style={[styles.pickerContainer, error && styles.inputError]}>
+              <View style={styles.pickerContainer}>
                 <Picker
                   selectedValue={value}
                   onValueChange={(itemValue, itemIndex) => {
                     onChange(itemValue)
-                    setValue("planId", plans[itemIndex - 1]?.id || "")
+                    setSelectedPlan(plans[itemIndex].id)
+                    setValue("planId", plans[itemIndex].id)
                   }}
                   style={styles.picker}
                 >
@@ -277,10 +308,9 @@ export default function AddMemberForm() {
                   ))}
                 </Picker>
               </View>
-              {error && <Text style={styles.errorText}>{error.message}</Text>}
             </View>
           )}
-          name="plan"
+          name="planName"
         />
 
         <View style={styles.row}>
@@ -305,19 +335,17 @@ export default function AddMemberForm() {
 
           <Controller
             control={control}
-            rules={{ required: "Paid amount is required" }}
-            render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+            render={({ field: { onChange, onBlur, value } }) => (
               <View style={[styles.inputGroup, styles.flex1]}>
                 <Text style={styles.label}>Paid Amount</Text>
                 <TextInput
-                  style={[styles.input, error && styles.inputError]}
+                  style={styles.input}
                   placeholder="0.00"
                   keyboardType="numeric"
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
                 />
-                {error && <Text style={styles.errorText}>{error.message}</Text>}
               </View>
             )}
             name="paidAmount"
@@ -344,14 +372,10 @@ export default function AddMemberForm() {
 
         <Controller
           control={control}
-          rules={{ required: "Admission date is required" }}
-          render={({ field: { onChange, value }, fieldState: { error } }) => (
+          render={({ field: { onChange, value } }) => (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Admission Date</Text>
-              <TouchableOpacity
-                style={[styles.dateButton, error && styles.inputError]}
-                onPress={() => setShowAdmissionDate(true)}
-              >
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowAdmissionDate(true)}>
                 <Text>{formatDate(value)}</Text>
               </TouchableOpacity>
               {showAdmissionDate && (
@@ -367,7 +391,6 @@ export default function AddMemberForm() {
                   }}
                 />
               )}
-              {error && <Text style={styles.errorText}>{error.message}</Text>}
             </View>
           )}
           name="admissionDate"
@@ -375,14 +398,10 @@ export default function AddMemberForm() {
 
         <Controller
           control={control}
-          rules={{ required: "Expiry date is required" }}
-          render={({ field: { onChange, value }, fieldState: { error } }) => (
+          render={({ field: { onChange, value } }) => (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Expiry Date</Text>
-              <TouchableOpacity
-                style={[styles.dateButton, error && styles.inputError]}
-                onPress={() => setShowExpiryDate(true)}
-              >
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowExpiryDate(true)}>
                 <Text>{formatDate(value)}</Text>
               </TouchableOpacity>
               {showExpiryDate && (
@@ -398,7 +417,6 @@ export default function AddMemberForm() {
                   }}
                 />
               )}
-              {error && <Text style={styles.errorText}>{error.message}</Text>}
             </View>
           )}
           name="expiryDate"
@@ -406,18 +424,16 @@ export default function AddMemberForm() {
 
         <Controller
           control={control}
-          rules={{ required: "Status is required" }}
-          render={({ field: { onChange, value }, fieldState: { error } }) => (
+          render={({ field: { onChange, value } }) => (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Status</Text>
-              <View style={[styles.pickerContainer, error && styles.inputError]}>
+              <View style={styles.pickerContainer}>
                 <Picker selectedValue={value} onValueChange={onChange} style={styles.picker}>
                   {statusOptions.map((status) => (
                     <Picker.Item key={status} label={status} value={status} />
                   ))}
                 </Picker>
               </View>
-              {error && <Text style={styles.errorText}>{error.message}</Text>}
             </View>
           )}
           name="status"
@@ -425,19 +441,17 @@ export default function AddMemberForm() {
 
         <Controller
           control={control}
-          rules={{ required: "Seat number is required" }}
-          render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+          render={({ field: { onChange, onBlur, value } }) => (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Seat Number</Text>
               <TextInput
-                style={[styles.input, error && styles.inputError]}
+                style={styles.input}
                 placeholder="Seat Number"
                 keyboardType="numeric"
                 onBlur={onBlur}
                 onChangeText={onChange}
                 value={value}
               />
-              {error && <Text style={styles.errorText}>{error.message}</Text>}
             </View>
           )}
           name="seatNumber"
@@ -445,14 +459,10 @@ export default function AddMemberForm() {
 
         <Controller
           control={control}
-          render={({ field: { onChange, value } }) => (
+          render={({ field: { value } }) => (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Profile Image</Text>
-              <TouchableOpacity
-                style={styles.uploadButton}
-                onPress={() => pickImage("profileImage")}
-                disabled={isLoading}
-              >
+              <TouchableOpacity style={styles.uploadButton} onPress={pickImage} disabled={isLoading}>
                 <Text style={styles.uploadButtonText}>{value ? "Change Image" : "Upload Image"}</Text>
               </TouchableOpacity>
               {isLoading && <ActivityIndicator size="large" color="#0f172a" />}
@@ -466,12 +476,12 @@ export default function AddMemberForm() {
           name="profileImage"
         />
 
-        <Controller
+         <Controller
           control={control}
-          render={({ field: { onChange, value } }) => (
+          render={({ field: { value } }) => (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Document</Text>
-              <TouchableOpacity style={styles.uploadButton} onPress={() => pickImage("document")} disabled={isLoading}>
+              <TouchableOpacity style={styles.uploadButton} onPress={pickImage} disabled={isLoading}>
                 <Text style={styles.uploadButtonText}>{value ? "Change Document" : "Upload Document"}</Text>
               </TouchableOpacity>
               {isLoading && <ActivityIndicator size="large" color="#0f172a" />}
@@ -484,7 +494,6 @@ export default function AddMemberForm() {
           )}
           name="document"
         />
-
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit(onSubmit)} disabled={isLoading}>
           <Text style={styles.submitButtonText}>Submit</Text>
         </TouchableOpacity>
@@ -522,14 +531,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 4,
     elevation: 2,
-  },
-  inputError: {
-    borderColor: "#ef4444",
-  },
-  errorText: {
-    color: "#ef4444",
-    fontSize: 12,
-    marginTop: 4,
   },
   pickerContainer: {
     borderWidth: 1,
