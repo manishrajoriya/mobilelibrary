@@ -6,11 +6,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Onboarding from '@/component/Onbording';
 
 
+
 export default function Index() {
   return (
    
    <SafeAreaProvider>
-      <Onboarding />
+   <Onboarding/>
       <Toast/>
     </SafeAreaProvider>
  

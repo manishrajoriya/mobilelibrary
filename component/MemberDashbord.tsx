@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { totalMemberCount, liveMemberCount, InactiveMemberCount, paidAmountCount, totalAmountCount, dueAmountCount } from "@/firebase/functions";
 import { useRouter } from "expo-router";
+import AddMemberForm from "./AddMemberForm";
 
 const StatCard = ({
   icon,
@@ -36,6 +37,7 @@ const StatCard = ({
     <Text style={styles.cardValue}>{value}</Text>
   </View>
 );
+
 
 export default function MembersDashboard() {
   const [member, setMember] = useState<number>(0);
@@ -185,7 +187,7 @@ export default function MembersDashboard() {
 
       <TouchableOpacity
         style={styles.addMemberButton}
-        onPress={() => {
+       onPress={() => {
           router.push("/(tabs)/addMemberForm");
         }}
       >

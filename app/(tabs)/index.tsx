@@ -10,7 +10,6 @@ const Index = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Sidebar />
-      
     </GestureHandlerRootView>
   );
 }

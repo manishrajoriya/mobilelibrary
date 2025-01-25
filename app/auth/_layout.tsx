@@ -2,12 +2,12 @@ import { View, Text } from 'react-native'
 import React from 'react'
 import { Stack } from 'expo-router'
 
-const tabsLayout = () => {
+const AuthLayout = () => {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="index" />
-  </Stack>
+      <Stack.Screen name="index" />
+    </Stack>
   )
 }
 
-export default tabsLayout
+export default AuthLayout
