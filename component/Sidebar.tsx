@@ -9,6 +9,7 @@ import AddMemberForm from "./AddMemberForm";
 import ShiftDetails from "./ShiftDetails";
 import Finance from "./Finance";
 import PricingSection from "./Pricing";
+import GymProfile from "./MemberData";
 
 type DrawerParamList = {
   Home: undefined;
@@ -18,6 +19,7 @@ type DrawerParamList = {
   ShiftDetails: undefined;
   Finance: undefined;
   Pricing: undefined;
+  GymProfile: undefined;
 };
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
@@ -114,6 +116,15 @@ const Sidebar = () => {
       <Drawer.Screen
         name="Pricing"
         component={PricingSection}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="wallet-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="GymProfile"
+        component={GymProfile}
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="wallet-outline" size={size} color={color} />

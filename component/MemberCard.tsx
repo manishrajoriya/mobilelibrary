@@ -1,5 +1,5 @@
 import React from "react"
-import { View, Text, StyleSheet, Image } from "react-native"
+import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native"
 import { MaterialIcons } from "@expo/vector-icons"
 import { ActionButtons } from "./MemberCardActionButton"
 import type { MemberDetails } from "@/types/MemberProfile"
@@ -26,10 +26,10 @@ const formatDate = (date: Date | string): string => {
   })
 }
 
-const MemberCard: React.FC<{ member: MemberDetails }> = React.memo(
-  ({ member }) => {
+const MemberCard: React.FC<{ member: MemberDetails, onPress: () => void }> = React.memo(
+  ({ member, onPress }) => {
     return (
-      <View style={styles.container}>
+      <TouchableOpacity style={styles.container} onPress={onPress}>
         <View style={styles.header}>
           <View style={styles.avatarSection}>
             <View style={styles.avatar}>
@@ -61,7 +61,7 @@ const MemberCard: React.FC<{ member: MemberDetails }> = React.memo(
 
         <View style={styles.planSection}>
           {[
-            { label: "Plan", value: member.planName || "N/A" },
+            { label: "Plan", value: member.plan || "N/A" },
             { label: "Join Date", value: formatDate(member.addmissionDate) },
             { label: "End Date", value: formatDate(member.expiryDate) },
           ].map(({ label, value }) => (
@@ -86,7 +86,7 @@ const MemberCard: React.FC<{ member: MemberDetails }> = React.memo(
         </View>
 
         <ActionButtons />
-      </View>
+      </TouchableOpacity>
     )
   },
   (prevProps, nextProps) => {

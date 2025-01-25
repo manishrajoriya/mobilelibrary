@@ -148,7 +148,7 @@ export async function addMember({ data }: { data: any }) {
         totalAmount: data?.totalAmount,
         paidAmount: data?.paidAmount,
         planId: data?.planId,
-        planName: data?.planName,
+        plan: data?.plan,
         createdAt: new Date(),
         updatedAt: new Date()
    });
@@ -162,26 +162,26 @@ export async function addMember({ data }: { data: any }) {
 }
 
 
-export async function getMembers(lastVisible?: QueryDocumentSnapshot<DocumentData>, pageSize = 5) {
+export async function getMembers(pageSize: number = 5, lastVisible?: QueryDocumentSnapshot<DocumentData>) {
   try {
-    const currentUser = getAuth().currentUser
+    const currentUser = getAuth().currentUser;
     if (!currentUser) {
-      throw new Error("User not authenticated. Redirecting to sign-in...")
+      throw new Error("User not authenticated. Redirecting to sign-in...");
     }
 
     let q = query(
       collection(db, "members"),
       where("admin", "==", currentUser.uid),
-      //  // Add an orderBy clause to ensure consistent pagination
-       orderBy("createdAt", "desc"),
-      limit(pageSize),
-    )
+      orderBy("createdAt", "desc"),
+      limit(pageSize)
+    );
 
+    // Apply pagination if a last visible document exists
     if (lastVisible) {
-      q = query(q, startAfter(lastVisible))
+      q = query(q, startAfter(lastVisible));
     }
 
-    const membersSnapshot = await getDocs(q)
+    const membersSnapshot = await getDocs(q);
 
     const members = membersSnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -199,17 +199,55 @@ export async function getMembers(lastVisible?: QueryDocumentSnapshot<DocumentDat
       totalAmount: doc.data().totalAmount,
       paidAmount: doc.data().paidAmount,
       planId: doc.data().planId,
-      planName: doc.data().planName,
+      plan: doc.data().plan,
       createdAt: doc.data().createdAt,
-      updatedAt: doc.data().updatedAt
-    }))
+      updatedAt: doc.data().updatedAt,
+    }));
 
-    const lastVisibleDoc = membersSnapshot.docs[membersSnapshot.docs.length - 1]
-    const hasMore = membersSnapshot.docs.length === pageSize
+    // Get the last document for pagination
+    const lastVisibleDoc = membersSnapshot.docs[membersSnapshot.docs.length - 1];
 
-    return { members, lastVisibleDoc, hasMore }
+    // Determine if there are more members to fetch
+    const hasMore = membersSnapshot.docs.length === pageSize;
+
+    return { members, lastVisibleDoc, hasMore };
   } catch (error: any) {
-    console.error("Unable to get members:", error.message)
+    console.error("Unable to get members:", error.message);
+    throw error;
+  }
+}
+
+
+
+export async function getMemberById({ id }: { id: string }) {
+  try {
+    const memberRef = doc(db, 'members', id)
+    const memberSnapshot = await getDoc(memberRef)
+    if (!memberSnapshot.exists()) {
+      throw new Error(`Member with ID ${id} does not exist`)
+    }
+    return { 
+      id: memberSnapshot.id, 
+      fullName: memberSnapshot.data().fullName,
+      address: memberSnapshot.data().address,
+      contactNumber: memberSnapshot.data().contactNumber,
+      email: memberSnapshot.data().email,
+      addmissionDate: memberSnapshot.data().addmissionDate.toDate(),
+      expiryDate: memberSnapshot.data().expiryDate.toDate(),
+      status: memberSnapshot.data().status,
+      seatNumber: memberSnapshot.data().seatNumber,
+      profileImage: memberSnapshot.data().profileImage,
+      document: memberSnapshot.data().document,
+      dueAmount: memberSnapshot.data().dueAmount,
+      totalAmount: memberSnapshot.data().totalAmount,
+      paidAmount: memberSnapshot.data().paidAmount,
+      planId: memberSnapshot.data().planId,
+      plan: memberSnapshot.data().plan,
+      createdAt: memberSnapshot.data().createdAt,
+      updatedAt: memberSnapshot.data().updatedAt
+     }
+  } catch (error: any) {
+    console.error("Unable to get member:", error.message)
     throw error
   }
 }
@@ -256,6 +294,70 @@ export async function InactiveMemberCount() {
     return membersSnapshot.size
   } catch (error: any) {
     console.error("Unable to get inactive member count:", error.message)
+    throw error
+  }
+}
+
+export async function paidAmountCount() {
+  try {
+    const currentUser = getAuth().currentUser;
+    if (!currentUser) {
+      throw new Error("User not authenticated. Redirecting to sign-in...");
+    }
+
+    // Query to get all members with status "Live" under the current admin
+    const q = query(
+      collection(db, "members"),
+      where("admin", "==", currentUser.uid),
+      
+    );
+    const membersSnapshot = await getDocs(q);
+
+    // Calculate the total paid amount
+    const paidAmount = membersSnapshot.docs
+      .map((doc) => Number(doc.data().paidAmount) || 0) // Convert string to number and default to 0 if invalid
+      .reduce((acc, amount) => acc + amount, 0); // Sum all amounts
+
+    return paidAmount;
+  } catch (error: any) {
+    console.error("Unable to get paid amount count:", error.message);
+    throw error;
+  }
+}
+
+
+export async function totalAmountCount() {
+  try {
+    const currentUser = getAuth().currentUser
+    if (!currentUser) {
+      throw new Error("User not authenticated. Redirecting to sign-in...")
+    }
+    const q = query(collection(db, "members"), where("admin", "==", currentUser.uid), )
+    const membersSnapshot = await getDocs(q)
+    const totalAmount = membersSnapshot.docs
+      .map((doc) => Number(doc.data().totalAmount) || 0) // Convert string to number and default to 0 if invalid
+      .reduce((acc, amount) => acc + amount, 0)
+    return totalAmount
+  } catch (error: any) {
+    console.error("Unable to get total amount count:", error.message)
+    throw error
+  }
+}
+
+export async function dueAmountCount() {
+  try {
+    const currentUser = getAuth().currentUser
+    if (!currentUser) {
+      throw new Error("User not authenticated. Redirecting to sign-in...")
+    }
+    const q = query(collection(db, "members"), where("admin", "==", currentUser.uid))
+    const membersSnapshot = await getDocs(q)
+    const dueAmount = membersSnapshot.docs
+      .map((doc) => Number(doc.data().dueAmount) || 0) // Convert string to number and default to 0 if invalid
+      .reduce((acc, amount) => acc + amount, 0)
+    return dueAmount
+  } catch (error: any) {
+    console.error("Unable to get due amount count:", error.message)
     throw error
   }
 }

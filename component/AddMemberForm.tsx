@@ -10,7 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native"
-import { useForm, Controller } from "react-hook-form"
+import { useForm, Controller, useWatch } from "react-hook-form"
 import DateTimePicker from "@react-native-community/datetimepicker"
 import { Picker } from "@react-native-picker/picker"
 import { addMember, getPlans, getPlanById } from "@/firebase/functions"
@@ -35,6 +35,7 @@ interface FormData {
   status: string
   seatNumber: string
   planId: string
+  
 }
 
 type PlanData = {
@@ -63,6 +64,7 @@ export default function AddMemberForm() {
       status: "Live",
       seatNumber: "",
       planId: "",
+      
     },
   })
 
@@ -135,6 +137,7 @@ export default function AddMemberForm() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
+      
       quality: 1,
     })
 
@@ -167,6 +170,9 @@ export default function AddMemberForm() {
       return uri
     }
   }
+
+  const watchProfileImage = watch("profileImage")
+  const watchDocument = watch("document")
 
   return (
     <ScrollView style={styles.container}>
@@ -268,6 +274,7 @@ export default function AddMemberForm() {
                   onValueChange={(itemValue, itemIndex) => {
                     onChange(itemValue)
                     setValue("planId", plans[itemIndex - 1]?.id || "")
+                    
                   }}
                   style={styles.picker}
                 >
@@ -443,11 +450,10 @@ export default function AddMemberForm() {
           name="seatNumber"
         />
 
-        <Controller
-          control={control}
-          render={({ field: { onChange, value } }) => (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Profile Image</Text>
+        <View style={styles.uploadButtonsContainer}>
+          <Controller
+            control={control}
+            render={({ field: { onChange, value } }) => (
               <TouchableOpacity
                 style={styles.uploadButton}
                 onPress={() => pickImage("profileImage")}
@@ -455,35 +461,31 @@ export default function AddMemberForm() {
               >
                 <Text style={styles.uploadButtonText}>{value ? "Change Image" : "Upload Image"}</Text>
               </TouchableOpacity>
-              {isLoading && <ActivityIndicator size="large" color="#0f172a" />}
-              {value && (
-                <Text style={styles.fileName}>
-                  {value.startsWith("http") ? "Image uploaded to cloud" : "Image stored locally"}
-                </Text>
-              )}
-            </View>
-          )}
-          name="profileImage"
-        />
-
-        <Controller
-          control={control}
-          render={({ field: { onChange, value } }) => (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Document</Text>
+            )}
+            name="profileImage"
+          />
+          <Controller
+            control={control}
+            render={({ field: { onChange, value } }) => (
               <TouchableOpacity style={styles.uploadButton} onPress={() => pickImage("document")} disabled={isLoading}>
                 <Text style={styles.uploadButtonText}>{value ? "Change Document" : "Upload Document"}</Text>
               </TouchableOpacity>
-              {isLoading && <ActivityIndicator size="large" color="#0f172a" />}
-              {value && (
-                <Text style={styles.fileName}>
-                  {value.startsWith("http") ? "Document uploaded to cloud" : "Document stored locally"}
-                </Text>
-              )}
-            </View>
-          )}
-          name="document"
-        />
+            )}
+            name="document"
+          />
+        </View>
+        {isLoading && <ActivityIndicator size="large" color="#0f172a" />}
+
+        {watchProfileImage && (
+          <Text style={styles.fileName}>
+            {watchProfileImage.startsWith("http") ? "Image uploaded to cloud" : "Image stored locally"}
+          </Text>
+        )}
+        {watchDocument && (
+          <Text style={styles.fileName}>
+            {watchDocument.startsWith("http") ? "Document uploaded to cloud" : "Document stored locally"}
+          </Text>
+        )}
 
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit(onSubmit)} disabled={isLoading}>
           <Text style={styles.submitButtonText}>Submit</Text>
@@ -580,22 +582,51 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  uploadButtonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
   uploadButton: {
     backgroundColor: "#e5e7eb",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  uploadButtonText: {
-    fontSize: 16,
-    color: "#1f2937",
+    flex: 1,
+    marginHorizontal: 5,
   },
   fileName: {
     marginTop: 8,
     fontSize: 14,
     color: "#6b7280",
   },
+  uploadButtonText: {
+    color: "#4b5563",
+    fontSize: 14,
+  },
+})
+
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "gray",
+    borderRadius: 4,
+    color: "black",
+    paddingRight: 30,
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 0.5,
+    borderColor: "purple",
+    borderRadius: 8,
+    color: "black",
+    paddingRight: 30,
+  },
+ 
 })
 

@@ -20,7 +20,7 @@ export const ActionButtons: React.FC = React.memo(() => {
     { icon: "edit-2", label: "Edit", onPress: () => {} },
     { icon: "plus", label: "Add Pay", onPress: () => {} },
     { icon: "refresh-ccw", label: "Renew", onPress: () => {} },
-    { icon: "file-plus", label: "Add Bill", onPress: () => {} },
+    { icon: "user", label: "Profile", onPress: () => {} },
   ]
 
   return (

@@ -1,88 +1,98 @@
-import type React from "react"
-import { useEffect, useState, useCallback, useRef } from "react"
-import { ActivityIndicator, StyleSheet, Text, FlatList } from "react-native"
-import { getMembers } from "@/firebase/functions"
-import type { QueryDocumentSnapshot, DocumentData } from "firebase/firestore"
-import MemberCard from "./MemberCard"
-import type { MemberDetails } from "@/types/MemberProfile"
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  FlatList,
+  View,
+  Modal,
+} from "react-native";
+import { getMembers } from "@/firebase/functions";
+import type { MemberDetails } from "@/types/MemberProfile";
+import MemberCard from "./MemberCard";
+import { useRouter } from "expo-router";
+import { DocumentData, QueryDocumentSnapshot } from "@firebase/firestore";
 
 const MemberProfileCards: React.FC = () => {
-  const [members, setMembers] = useState<MemberDetails[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null)
-  const [hasMore, setHasMore] = useState(true)
-  const flatListRef = useRef<FlatList<MemberDetails>>(null)
+  const [members, setMembers] = useState<MemberDetails[]>([]);
+  const [isLoading, setIsLoading] = useState(false); // General loading state
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // Load more state
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData, DocumentData>>();
+  const [hasMore, setHasMore] = useState(true);
+  const router = useRouter();
 
-  const fetchMembers = useCallback(
-    async (lastVisibleDoc?: QueryDocumentSnapshot<DocumentData>) => {
-      if (!hasMore && lastVisibleDoc) return
+  // Fetch initial members
+  const fetchInitialMembers = async () => {
+    setIsLoading(true);
+    try {
+      const { members: newMembers, lastVisibleDoc, hasMore: more } = await getMembers();
+      setMembers(newMembers);
+      setLastVisible(lastVisibleDoc);
+      setHasMore(more);
+    } catch (error) {
+      console.error("Error fetching members:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      setIsLoading(true)
-      try {
-        const {
-          members: newMembers,
-          lastVisibleDoc: newLastVisible,
-          hasMore: newHasMore,
-        } = await getMembers(lastVisibleDoc)
-
-        if (lastVisibleDoc) {
-          setMembers((prev) => [...prev, ...newMembers])
-        } else {
-          setMembers(newMembers)
-        }
-
-        setLastVisible(newLastVisible || null)
-        setHasMore(newHasMore)
-      } catch (error) {
-        console.error("Error fetching members:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    [hasMore],
-  )
+  // Fetch more members when scrolling
+  const fetchMoreMembers = async () => {
+    if (isLoadingMore || !hasMore) return; // Prevent duplicate calls if already loading or no more items
+    setIsLoadingMore(true);
+    try {
+      const { members: newMembers, lastVisibleDoc, hasMore: more } = await getMembers(5, lastVisible);
+      setMembers((prev) => [...prev, ...newMembers]); // Append new members to the existing list
+      setLastVisible(lastVisibleDoc);
+      setHasMore(more);
+    } catch (error) {
+      console.error("Error fetching more members:", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
-    fetchMembers()
-  }, [fetchMembers])
+    fetchInitialMembers();
+  }, []);
 
-  const handleLoadMore = () => {
-    if (!isLoading && hasMore) {
-      fetchMembers(lastVisible || undefined)
-    }
-  }
+  // Handle member click
+  const handleMemberClick = (id: string) => {
+    router.push(`/(tabs)/memberData?id=${id}`);
+  };
 
-  const renderItem = useCallback(({ item }: { item: MemberDetails }) => <MemberCard member={item} />, [])
+  // Render member card
+  const renderItem = ({ item }: { item: MemberDetails }) => (
+    <MemberCard member={item} onPress={() => handleMemberClick(item.id)} />
+  );
 
-  const keyExtractor = useCallback((item: MemberDetails) => item.id || `member-${item.fullName}-${item.seatNumber}`, [])
-
-  if (isLoading && members.length === 0) {
-    return <ActivityIndicator size="large" color="#6B46C1" style={styles.loader} />
-  }
-
-  if (members.length === 0) {
-    return <Text style={styles.noMembersText}>No members found.</Text>
+  // Show "No Members" message if no data
+  if (!isLoading && members.length === 0) {
+    return <Text style={styles.noMembersText}>No members found.</Text>;
   }
 
   return (
-    <FlatList
-      ref={flatListRef}
-      data={members}
-      renderItem={renderItem}
-      keyExtractor={keyExtractor}
-      onEndReached={handleLoadMore}
-      onEndReachedThreshold={0.1}
-      ListFooterComponent={() =>
-        isLoading ? <ActivityIndicator size="small" color="#6B46C1" style={styles.loader} /> : null
-      }
-      initialNumToRender={10}
-      maxToRenderPerBatch={10}
-      windowSize={21}
-      removeClippedSubviews={true}
-      updateCellsBatchingPeriod={50}
-    />
-  )
-}
+    <View style={{ flex: 1 }}>
+      {/* Loading Popup */}
+      <Modal visible={isLoading || isLoadingMore} transparent animationType="fade">
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContent}>
+            <ActivityIndicator size="large" color="#6B46C1" />
+            <Text style={styles.loadingText}>Loading...</Text>
+          </View>
+        </View>
+      </Modal>
+
+      <FlatList
+        data={members}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        onEndReached={fetchMoreMembers} // Trigger when the user scrolls near the bottom
+        onEndReachedThreshold={0.5} // Trigger when 50% away from the bottom
+      />
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   loader: {
@@ -93,7 +103,27 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
   },
-})
+  modalBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    width: 200,
+    height: 150,
+    elevation: 5,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#6B46C1",
+  },
+});
 
-export default MemberProfileCards
-
+export default MemberProfileCards;
