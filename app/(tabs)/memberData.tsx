@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  ScrollView, 
-  ActivityIndicator, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  ActivityIndicator,
   Image,
-  TouchableOpacity 
+  TouchableOpacity,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { AntDesign } from '@expo/vector-icons';
+import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { getMemberById } from "@/firebase/functions";
 
 interface MemberDetails {
@@ -34,12 +34,14 @@ interface MemberDetails {
 interface DetailRowProps {
   label: string;
   value: string | number;
+  icon?: React.ReactNode;
 }
 
-const DetailRow: React.FC<DetailRowProps> = ({ label, value }) => (
+const DetailRow: React.FC<DetailRowProps> = ({ label, value, icon }) => (
   <View style={styles.detailRow}>
+    {icon && <View style={styles.detailIcon}>{icon}</View>}
     <Text style={styles.detailLabel}>{label}</Text>
-    <Text style={styles.detailValue}>{value || 'NA'}</Text>
+    <Text style={styles.detailValue}>{value || "NA"}</Text>
   </View>
 );
 
@@ -86,7 +88,7 @@ const MemberDetails: React.FC = () => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Profile Header */}
+      {/* Gradient Header */}
       <View style={styles.header}>
         <Image
           source={{ uri: member.profileImage }}
@@ -104,29 +106,69 @@ const MemberDetails: React.FC = () => {
 
       {/* Member Details Card */}
       <View style={styles.card}>
-        <DetailRow label="Membership ID" value={member.id} />
-        <DetailRow label="Admission Date" value={member.addmissionDate.toDateString()} />
-        <DetailRow label="Date Of Birth" value="NA" />
-        <DetailRow label="Email" value={member.email} />
-        <DetailRow label="Gender" value="Male" />
-        <DetailRow label="Company:" value="NA" />
-        <DetailRow label="Marriage Anniversary" value="NA" />
-        <DetailRow label="Home Phone" value="NA" />
-        <DetailRow label="Care of (c/o)" value="NA" />
-        <DetailRow label="Remark" value="NA" />
+        <DetailRow
+          label="Membership ID"
+          value={member.id}
+          icon={<MaterialIcons name="perm-identity" size={16} color="#6B46C1" />}
+        />
+        <DetailRow
+          label="Admission Date"
+          value={member.addmissionDate.toDateString()}
+          icon={<MaterialIcons name="event" size={16} color="#6B46C1" />}
+        />
+        <DetailRow
+          label="Date Of Birth"
+          value="NA"
+          icon={<MaterialIcons name="cake" size={16} color="#6B46C1" />}
+        />
+        <DetailRow
+          label="Email"
+          value={member.email}
+          icon={<MaterialIcons name="email" size={16} color="#6B46C1" />}
+        />
+        <DetailRow
+          label="Gender"
+          value="Male"
+          icon={<MaterialIcons name="wc" size={16} color="#6B46C1" />}
+        />
+        <DetailRow
+          label="Company:"
+          value="NA"
+          icon={<MaterialIcons name="business" size={16} color="#6B46C1" />}
+        />
+        <DetailRow
+          label="Marriage Anniversary"
+          value="NA"
+          icon={<MaterialIcons name="favorite" size={16} color="#6B46C1" />}
+        />
+        <DetailRow
+          label="Home Phone"
+          value="NA"
+          icon={<MaterialIcons name="phone" size={16} color="#6B46C1" />}
+        />
+        <DetailRow
+          label="Care of (c/o)"
+          value="NA"
+          icon={<MaterialIcons name="person-outline" size={16} color="#6B46C1" />}
+        />
+        <DetailRow
+          label="Remark"
+          value="NA"
+          icon={<MaterialIcons name="comment" size={16} color="#6B46C1" />}
+        />
       </View>
 
       {/* Attendance Report */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.card}
         onPress={() => setShowAttendance(!showAttendance)}
       >
         <View style={styles.reportHeader}>
           <Text style={styles.reportTitle}>Attendance Report</Text>
-          <AntDesign 
-            name={showAttendance ? "up" : "down"} 
-            size={20} 
-            color="#00A0E3" 
+          <AntDesign
+            name={showAttendance ? "up" : "down"}
+            size={20}
+            color="#6B46C1"
           />
         </View>
       </TouchableOpacity>
@@ -134,7 +176,16 @@ const MemberDetails: React.FC = () => {
       {/* Documents Section */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Documents:</Text>
-        <Text style={styles.noDataText}>:( Nothing Found</Text>
+        {
+          member.document ? (
+            <Image
+              source={{ uri: member.document }}
+              style={styles.documentImage}
+            />
+          ) : (
+            <Text style={styles.noDataText}>:( Nothing Found</Text>
+          )
+        }
       </View>
 
       {/* Action Buttons */}
@@ -200,163 +251,193 @@ const MemberDetails: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   header: {
-    backgroundColor: '#00A0E3',
+    backgroundColor: "#00A0E3",
     padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 5,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#9DE7BF',
+    backgroundColor: "#9DE7BF",
+    borderWidth: 2,
+    borderColor: "#fff",
   },
   profileInfo: {
     marginLeft: 20,
     flex: 1,
   },
   headerValue: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
     marginBottom: 8,
+    fontWeight: "500",
+  },
+  label: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 14,
+    marginBottom: 2,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 15,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
     margin: 10,
-    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
+  },
+  detailIcon: {
+    marginRight: 10,
   },
   detailLabel: {
-    color: '#666',
+    color: "#666",
     flex: 1,
     fontSize: 14,
   },
   detailValue: {
-    color: '#333',
-    flex: 1,
-    textAlign: 'right',
+    color: "#333",
     fontSize: 14,
-  },
-  label: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 14,
-    marginBottom: 2,
+    fontWeight: "500",
   },
   reportHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   reportTitle: {
-    color: '#00A0E3',
+    color: "#6B46C1",
     fontSize: 16,
+    fontWeight: "500",
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 10,
+    color: "#333",
   },
   noDataText: {
-    color: '#666',
-    fontStyle: 'italic',
+    color: "#666",
+    fontStyle: "italic",
+  },
+  documentImage: {
+    width: "100%",
+    height: 200,
+    resizeMode: "contain",
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     margin: 10,
   },
   gymPlanButton: {
-    backgroundColor: '#00A0E3',
+    backgroundColor: "#6B46C1",
     padding: 15,
-    borderRadius: 8,
+    borderRadius: 12,
     flex: 1,
     marginRight: 5,
+    alignItems: "center",
   },
   addOnPlanButton: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 15,
-    borderRadius: 8,
+    borderRadius: 12,
     flex: 1,
     marginLeft: 5,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#6B46C1",
+    alignItems: "center",
   },
   gymPlanButtonText: {
-    color: '#fff',
-    textAlign: 'center',
+    color: "#fff",
     fontSize: 16,
+    fontWeight: "500",
   },
   addOnPlanButtonText: {
-    color: '#333',
-    textAlign: 'center',
+    color: "#6B46C1",
     fontSize: 16,
+    fontWeight: "500",
   },
   planName: {
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: "600",
     marginBottom: 15,
+    color: "#333",
   },
   planGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   planColumn: {
     flex: 1,
   },
   planLabel: {
-    color: '#00A0E3',
+    color: "#666",
     marginBottom: 5,
     fontSize: 14,
   },
   planValue: {
-    color: '#333',
+    color: "#333",
     marginBottom: 15,
     fontSize: 14,
+    fontWeight: "500",
   },
   dueAmount: {
-    color: '#ff0000',
+    color: "#ff0000",
   },
   table: {
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#f8f9fa',
+    flexDirection: "row",
+    backgroundColor: "#f8f9fa",
     borderBottomWidth: 1,
-    borderBottomColor: '#dee2e6',
+    borderBottomColor: "#dee2e6",
   },
   tableHeaderCell: {
     flex: 1,
     padding: 12,
-    fontWeight: '500',
-    textAlign: 'center',
+    fontWeight: "500",
+    textAlign: "center",
     fontSize: 14,
+    color: "#333",
   },
   tableRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: '#dee2e6',
+    borderBottomColor: "#dee2e6",
   },
   tableCell: {
     flex: 1,
     padding: 12,
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 14,
+    color: "#666",
   },
   printButton: {
-    color: '#00A0E3',
+    color: "#6B46C1",
+    fontWeight: "500",
   },
   loaderContainer: {
     flex: 1,

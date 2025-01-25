@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,42 +9,42 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
-} from "react-native"
-import { useForm, Controller, useWatch } from "react-hook-form"
-import DateTimePicker from "@react-native-community/datetimepicker"
-import { Picker } from "@react-native-picker/picker"
-import { addMember, getPlans, getPlanById } from "@/firebase/functions"
-import Toast from "react-native-toast-message"
-import * as ImagePicker from "expo-image-picker"
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { storage } from "@/utils/firebaseConfig"
+  Image,
+} from "react-native";
+import { useForm, Controller, useWatch } from "react-hook-form";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Picker } from "@react-native-picker/picker";
+import { addMember, getPlans, getPlanById } from "@/firebase/functions";
+import Toast from "react-native-toast-message";
+import * as ImagePicker from "expo-image-picker";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "@/utils/firebaseConfig";
 
 interface FormData {
-  fullName: string
-  address: string
-  contactNumber: string
-  email: string
-  plan: string
-  totalAmount: string
-  paidAmount: string
-  dueAmount: string
-  profileImage: string
-  document: string
-  admissionDate: Date
-  expiryDate: Date
-  status: string
-  seatNumber: string
-  planId: string
-  
+  fullName: string;
+  address: string;
+  contactNumber: string;
+  email: string;
+  plan: string;
+  totalAmount: string;
+  paidAmount: string;
+  dueAmount: string;
+  profileImage: string;
+  document: string;
+  admissionDate: Date;
+  expiryDate: Date;
+  status: string;
+  seatNumber: string;
+  planId: string;
 }
 
 type PlanData = {
-  id: string
-  name: string
-  description: string | null
-  duration: string
-  amount: string
-}
+  id: string;
+  name: string;
+  description: string | null;
+  duration: string; // Duration in days
+  amount: string;
+};
 
 export default function AddMemberForm() {
   const { control, handleSubmit, setValue, watch } = useForm<FormData>({
@@ -64,119 +64,148 @@ export default function AddMemberForm() {
       status: "Live",
       seatNumber: "",
       planId: "",
-      
     },
-  })
+  });
 
-  const [showAdmissionDate, setShowAdmissionDate] = useState(false)
-  const [showExpiryDate, setShowExpiryDate] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [plans, setPlans] = useState<PlanData[]>([])
-  const [selectedPlan, setSelectedPlan] = useState<PlanData | null>(null)
+  const [showAdmissionDate, setShowAdmissionDate] = useState(false);
+  const [showExpiryDate, setShowExpiryDate] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [plans, setPlans] = useState<PlanData[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<PlanData | null>(null);
 
-  const statusOptions = ["Live", "Pending", "Expired"]
+  const statusOptions = ["Live", "Pending", "Expired"];
 
+  // Fetch plans on component mount
   useEffect(() => {
     const fetchPlans = async () => {
-      const plansData = await getPlans()
-      setPlans(plansData)
-    }
-    fetchPlans()
-  }, [])
+      const plansData = await getPlans();
+      setPlans(plansData);
+    };
+    fetchPlans();
+  }, []);
 
+  // Watch for changes in planId and update selectedPlan and totalAmount
   useEffect(() => {
-    const planId = watch("planId")
+    const planId = watch("planId");
     if (planId) {
       const fetchPlan = async () => {
-        const planData = await getPlanById({ id: planId })
-        setSelectedPlan(planData)
-        setValue("totalAmount", planData.amount)
-      }
-      fetchPlan()
+        const planData = await getPlanById({ id: planId });
+        setSelectedPlan(planData);
+        setValue("totalAmount", planData.amount);
+      };
+      fetchPlan();
     }
-  }, [watch("planId")])
+  }, [watch("planId")]);
+
+  // Auto-calculate due amount when paidAmount changes
+  useEffect(() => {
+    const paidAmount = parseFloat(watch("paidAmount")) || 0;
+    const totalAmount = parseFloat(watch("totalAmount")) || 0;
+    const dueAmount = totalAmount - paidAmount;
+    setValue("dueAmount", dueAmount.toFixed(2));
+  }, [watch("paidAmount"), watch("totalAmount")]);
+
+  // Auto-calculate expiry date when admissionDate or plan changes
+  useEffect(() => {
+    const admissionDate = watch("admissionDate");
+    const planDuration = selectedPlan ? parseInt(selectedPlan.duration) : 0;
+    if (admissionDate && planDuration) {
+      const expiryDate = new Date(admissionDate);
+      expiryDate.setDate(expiryDate.getDate() + planDuration);
+      setValue("expiryDate", expiryDate);
+    }
+  }, [watch("admissionDate"), selectedPlan]);
 
   const onSubmit = async (data: FormData) => {
     try {
-      await addMember({ data })
+      await addMember({ data });
       Toast.show({
         type: "success",
         text1: "Member added successfully",
-      })
+      });
       // Reset form
-      Object.keys(data).forEach((key) => setValue(key as keyof FormData, ""))
-      setValue("admissionDate", new Date())
-      setValue("expiryDate", new Date())
-      setValue("status", "Live")
+      Object.keys(data).forEach((key) => setValue(key as keyof FormData, ""));
+      setValue("admissionDate", new Date());
+      setValue("expiryDate", new Date());
+      setValue("status", "Live");
     } catch (error) {
-      console.error("Error adding member: ", error)
+      console.error("Error adding member: ", error);
       Toast.show({
         type: "error",
         text1: "Failed to add member",
         text2: "Please try again",
-      })
+      });
     }
-  }
+  };
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
-    })
-  }
+    });
+  };
 
-  const pickImage = async (field: "profileImage" | "document") => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+  const pickImage = async (field: "profileImage" | "document", source: "camera" | "gallery") => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Camera roll permissions are required!")
-      return
+      Alert.alert("Permission Required", "Camera and gallery permissions are required!");
+      return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [4, 3],
-      
-      quality: 1,
-    })
+    let result;
+    if (source === "camera") {
+      result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+    } else {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: field === "profileImage" ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.All,
+        allowsEditing: field === "profileImage",
+        quality: 1,
+      });
+    }
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      setIsLoading(true)
+      setIsLoading(true);
       try {
-        const uploadedUrl = await uploadImageToFirebase(result.assets[0].uri)
-        setValue(field, uploadedUrl)
+        const uploadedUrl = await uploadImageToFirebase(result.assets[0].uri);
+        setValue(field, uploadedUrl);
       } catch (error) {
-        console.error("Image upload failed", error)
-        Alert.alert("Upload Error", "Failed to upload image.")
+        console.error("Upload failed", error);
+        Alert.alert("Upload Error", "Failed to upload file.");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
-  }
+  };
 
   const uploadImageToFirebase = async (uri: string): Promise<string> => {
-    const response = await fetch(uri)
-    const blob = await response.blob()
-    const filename = uri.substring(uri.lastIndexOf("/") + 1)
-    const storageRef = ref(storage, `images/${filename}`)
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const filename = uri.substring(uri.lastIndexOf("/") + 1);
+    const storageRef = ref(storage, `uploads/${filename}`);
 
     try {
-      const snapshot = await uploadBytes(storageRef, blob)
-      return await getDownloadURL(snapshot.ref)
+      const snapshot = await uploadBytes(storageRef, blob);
+      return await getDownloadURL(snapshot.ref);
     } catch (error: any) {
-      console.error("Error uploading image: ", error)
-      Alert.alert("Upload Error", "Failed to upload image. The image will be stored locally for now.")
-      return uri
+      console.error("Error uploading file: ", error);
+      Alert.alert("Upload Error", "Failed to upload file. The file will be stored locally for now.");
+      return uri;
     }
-  }
+  };
 
-  const watchProfileImage = watch("profileImage")
-  const watchDocument = watch("document")
+  const watchProfileImage = watch("profileImage");
+  const watchDocument = watch("document");
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.formContainer}>
+        {/* Name */}
         <Controller
           control={control}
           rules={{ required: "Name is required" }}
@@ -196,6 +225,7 @@ export default function AddMemberForm() {
           name="fullName"
         />
 
+        {/* Address */}
         <Controller
           control={control}
           rules={{ required: "Address is required" }}
@@ -215,6 +245,7 @@ export default function AddMemberForm() {
           name="address"
         />
 
+        {/* Contact Number */}
         <Controller
           control={control}
           rules={{ required: "Contact number is required" }}
@@ -235,6 +266,7 @@ export default function AddMemberForm() {
           name="contactNumber"
         />
 
+        {/* Email */}
         <Controller
           control={control}
           rules={{
@@ -262,6 +294,7 @@ export default function AddMemberForm() {
           name="email"
         />
 
+        {/* Plan Selection */}
         <Controller
           control={control}
           rules={{ required: "Plan is required" }}
@@ -272,9 +305,8 @@ export default function AddMemberForm() {
                 <Picker
                   selectedValue={value}
                   onValueChange={(itemValue, itemIndex) => {
-                    onChange(itemValue)
-                    setValue("planId", plans[itemIndex - 1]?.id || "")
-                    
+                    onChange(itemValue);
+                    setValue("planId", plans[itemIndex - 1]?.id || "");
                   }}
                   style={styles.picker}
                 >
@@ -290,6 +322,7 @@ export default function AddMemberForm() {
           name="plan"
         />
 
+        {/* Total, Paid, and Due Amount */}
         <View style={styles.row}>
           <Controller
             control={control}
@@ -349,6 +382,7 @@ export default function AddMemberForm() {
           />
         </View>
 
+        {/* Admission Date */}
         <Controller
           control={control}
           rules={{ required: "Admission date is required" }}
@@ -367,9 +401,9 @@ export default function AddMemberForm() {
                   mode="date"
                   display={Platform.OS === "ios" ? "spinner" : "default"}
                   onChange={(event, selectedDate) => {
-                    setShowAdmissionDate(false)
+                    setShowAdmissionDate(false);
                     if (selectedDate) {
-                      onChange(selectedDate)
+                      onChange(selectedDate);
                     }
                   }}
                 />
@@ -380,6 +414,7 @@ export default function AddMemberForm() {
           name="admissionDate"
         />
 
+        {/* Expiry Date */}
         <Controller
           control={control}
           rules={{ required: "Expiry date is required" }}
@@ -398,9 +433,9 @@ export default function AddMemberForm() {
                   mode="date"
                   display={Platform.OS === "ios" ? "spinner" : "default"}
                   onChange={(event, selectedDate) => {
-                    setShowExpiryDate(false)
+                    setShowExpiryDate(false);
                     if (selectedDate) {
-                      onChange(selectedDate)
+                      onChange(selectedDate);
                     }
                   }}
                 />
@@ -411,6 +446,7 @@ export default function AddMemberForm() {
           name="expiryDate"
         />
 
+        {/* Status */}
         <Controller
           control={control}
           rules={{ required: "Status is required" }}
@@ -430,6 +466,7 @@ export default function AddMemberForm() {
           name="status"
         />
 
+        {/* Seat Number */}
         <Controller
           control={control}
           rules={{ required: "Seat number is required" }}
@@ -450,50 +487,55 @@ export default function AddMemberForm() {
           name="seatNumber"
         />
 
+        {/* Upload Buttons */}
         <View style={styles.uploadButtonsContainer}>
-          <Controller
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <TouchableOpacity
-                style={styles.uploadButton}
-                onPress={() => pickImage("profileImage")}
-                disabled={isLoading}
-              >
-                <Text style={styles.uploadButtonText}>{value ? "Change Image" : "Upload Image"}</Text>
-              </TouchableOpacity>
-            )}
-            name="profileImage"
-          />
-          <Controller
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <TouchableOpacity style={styles.uploadButton} onPress={() => pickImage("document")} disabled={isLoading}>
-                <Text style={styles.uploadButtonText}>{value ? "Change Document" : "Upload Document"}</Text>
-              </TouchableOpacity>
-            )}
-            name="document"
-          />
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => pickImage("profileImage", "gallery")}
+            disabled={isLoading}
+          >
+            <Text style={styles.uploadButtonText}>Upload Image</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => pickImage("profileImage", "camera")}
+            disabled={isLoading}
+          >
+            <Text style={styles.uploadButtonText}>Take Photo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => pickImage("document", "gallery")}
+            disabled={isLoading}
+          >
+            <Text style={styles.uploadButtonText}>Upload Document</Text>
+          </TouchableOpacity>
         </View>
-        {isLoading && <ActivityIndicator size="large" color="#0f172a" />}
 
+        {/* Display Uploaded Files */}
+        {isLoading && <ActivityIndicator size="large" color="#3b82f6" />}
         {watchProfileImage && (
-          <Text style={styles.fileName}>
-            {watchProfileImage.startsWith("http") ? "Image uploaded to cloud" : "Image stored locally"}
-          </Text>
+          <View style={styles.uploadedFileContainer}>
+            <Text style={styles.uploadedFileText}>Profile Image:</Text>
+            <Image source={{ uri: watchProfileImage }} style={styles.uploadedImage} />
+          </View>
         )}
         {watchDocument && (
-          <Text style={styles.fileName}>
-            {watchDocument.startsWith("http") ? "Document uploaded to cloud" : "Document stored locally"}
-          </Text>
+          <View style={styles.uploadedFileContainer}>
+            <Text style={styles.uploadedFileText}>Document:</Text>
+            <Text style={styles.uploadedFileLink}>{watchDocument}</Text>
+          </View>
         )}
 
+
+        {/* Submit Button */}
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit(onSubmit)} disabled={isLoading}>
           <Text style={styles.submitButtonText}>Submit</Text>
         </TouchableOpacity>
       </View>
       <Toast />
     </ScrollView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -595,38 +637,26 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 5,
   },
-  fileName: {
-    marginTop: 8,
-    fontSize: 14,
-    color: "#6b7280",
-  },
   uploadButtonText: {
     color: "#4b5563",
     fontSize: 14,
   },
-})
-
-const pickerSelectStyles = StyleSheet.create({
-  inputIOS: {
-    fontSize: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: "gray",
-    borderRadius: 4,
-    color: "black",
-    paddingRight: 30,
+  uploadedFileContainer: {
+    marginTop: 10,
   },
-  inputAndroid: {
-    fontSize: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: 0.5,
-    borderColor: "purple",
+  uploadedFileText: {
+    fontSize: 14,
+    color: "#6b7280",
+  },
+  uploadedFileLink: {
+    fontSize: 14,
+    color: "#3b82f6",
+    textDecorationLine: "underline",
+  },
+  uploadedImage: {
+    width: 100,
+    height: 100,
     borderRadius: 8,
-    color: "black",
-    paddingRight: 30,
+    marginTop: 8,
   },
- 
-})
-
+});

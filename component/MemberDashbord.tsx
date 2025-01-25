@@ -8,7 +8,14 @@ import {
   RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { totalMemberCount, liveMemberCount, InactiveMemberCount, paidAmountCount, totalAmountCount, dueAmountCount } from "@/firebase/functions";
+import {
+  totalMemberCount,
+  liveMemberCount,
+  InactiveMemberCount,
+  paidAmountCount,
+  totalAmountCount,
+  dueAmountCount,
+} from "@/firebase/functions";
 import { useRouter } from "expo-router";
 import AddMemberForm from "./AddMemberForm";
 
@@ -27,17 +34,14 @@ const StatCard = ({
   style: any;
   onPress: () => void;
 }) => (
-  <View style={[styles.card, style]}>
+  <TouchableOpacity onPress={onPress} style={[styles.card, style]}>
     <View style={[styles.iconContainer, { backgroundColor: `${color}10` }]}>
       <Ionicons name={icon} size={24} color={color} />
     </View>
-    <TouchableOpacity onPress={onPress}>
-      <Text style={styles.cardTitle}>{title}</Text>
-    </TouchableOpacity>
+    <Text style={styles.cardTitle}>{title}</Text>
     <Text style={styles.cardValue}>{value}</Text>
-  </View>
+  </TouchableOpacity>
 );
-
 
 export default function MembersDashboard() {
   const [member, setMember] = useState<number>(0);
@@ -46,11 +50,10 @@ export default function MembersDashboard() {
   const [paidAmount, setPaidAmount] = useState<number>(0);
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [dueAmount, setDueAmount] = useState<number>(0);
-  const [refreshing, setRefreshing] = useState(false); // State for pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false);
 
   const router = useRouter();
 
-  // Function to fetch all stats
   const fetchStats = async () => {
     try {
       const total = await totalMemberCount();
@@ -71,16 +74,14 @@ export default function MembersDashboard() {
     }
   };
 
-  // Initial data fetch
   useEffect(() => {
     fetchStats();
   }, []);
 
-  // Function triggered by pull-to-refresh
   const onRefresh = async () => {
-    setRefreshing(true); // Show the refresh indicator
+    setRefreshing(true);
     await fetchStats();
-    setRefreshing(false); // Hide the refresh indicator
+    setRefreshing(false);
   };
 
   const stats = [
@@ -90,9 +91,7 @@ export default function MembersDashboard() {
       value: member,
       color: "#4285F4",
       style: { backgroundColor: "#fff" },
-      onPress: () => {
-        router.push("/(tabs)/memberProfileCard");
-      },
+      onPress: () => router.push("/(tabs)/memberProfileCard"),
     },
     {
       icon: "people",
@@ -100,9 +99,7 @@ export default function MembersDashboard() {
       value: liveMember,
       color: "#34A853",
       style: { backgroundColor: "#fff" },
-      onPress: () => {
-        router.push("/(tabs)/memberProfileCard");
-      },
+      onPress: () => router.push("/(tabs)/memberProfileCard"),
     },
     {
       icon: "person-remove",
@@ -110,9 +107,7 @@ export default function MembersDashboard() {
       value: inactiveMember,
       color: "#EA4335",
       style: { backgroundColor: "#fff" },
-      onPress: () => {
-        router.push("/(tabs)/memberProfileCard");
-      },
+      onPress: () => router.push("/(tabs)/memberProfileCard"),
     },
     {
       icon: "card",
@@ -120,9 +115,7 @@ export default function MembersDashboard() {
       value: totalAmount,
       color: "#4285F4",
       style: { backgroundColor: "#fff" },
-      onPress: () => {
-        router.push("/(tabs)/memberProfileCard");
-      },
+      onPress: () => router.push("/(tabs)/memberProfileCard"),
     },
     {
       icon: "cash",
@@ -130,9 +123,7 @@ export default function MembersDashboard() {
       value: paidAmount,
       color: "#9C27B0",
       style: { backgroundColor: "#fff" },
-      onPress: () => {
-        router.push("/(tabs)/memberProfileCard");
-      },
+      onPress: () => router.push("/(tabs)/memberProfileCard"),
     },
     {
       icon: "time",
@@ -140,9 +131,7 @@ export default function MembersDashboard() {
       value: dueAmount,
       color: "#FB8C00",
       style: { backgroundColor: "#fff" },
-      onPress: () => {
-        router.push("/(tabs)/memberProfileCard");
-      },
+      onPress: () => router.push("/(tabs)/memberProfileCard"),
     },
     {
       icon: "trending-up",
@@ -150,9 +139,7 @@ export default function MembersDashboard() {
       value: 1200,
       color: "#34A853",
       style: { backgroundColor: "#fff" },
-      onPress: () => {
-        router.push("/(tabs)/financeScreen");
-      },
+      onPress: () => router.push("/(tabs)/financeScreen"),
     },
     {
       icon: "stats-chart",
@@ -160,9 +147,7 @@ export default function MembersDashboard() {
       value: 600,
       color: "#EA4335",
       style: { backgroundColor: "#fff" },
-      onPress: () => {
-        router.push("/(tabs)/financeScreen");
-      },
+      onPress: () => router.push("/(tabs)/financeScreen"),
     },
   ];
 
@@ -173,6 +158,7 @@ export default function MembersDashboard() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
+      {/* Gradient Header */}
       <View style={styles.header}>
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
@@ -185,11 +171,10 @@ export default function MembersDashboard() {
         </TouchableOpacity>
       </View>
 
+      {/* Add Member Button */}
       <TouchableOpacity
         style={styles.addMemberButton}
-       onPress={() => {
-          router.push("/(tabs)/addMemberForm");
-        }}
+        onPress={() => router.push("/(tabs)/addMemberForm")}
       >
         <View style={styles.addIcon}>
           <Ionicons name="add" size={24} color="#666" />
@@ -197,6 +182,7 @@ export default function MembersDashboard() {
         <Text style={styles.addMemberText}>Add Member</Text>
       </TouchableOpacity>
 
+      {/* Stats Grid */}
       <View style={styles.statsGrid}>
         {stats.map((stat, index) => (
           <StatCard key={index} {...stat} />
@@ -215,9 +201,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
-    backgroundColor: "#fff",
-    marginBottom: 16,
+    padding: 20,
+    backgroundColor: "#00A0E3",
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 5,
   },
   profileSection: {
     flexDirection: "row",
@@ -235,7 +227,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
+    color: "#fff",
   },
   addMemberButton: {
     flexDirection: "row",
@@ -243,8 +235,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 16,
     marginBottom: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     marginHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginTop: 25,
   },
   addIcon: {
     width: 40,
@@ -267,17 +265,14 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     margin: 8,
     width: "45%",
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 6,
     elevation: 3,
   },
   iconContainer: {

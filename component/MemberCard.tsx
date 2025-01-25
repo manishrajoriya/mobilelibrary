@@ -42,18 +42,20 @@ const MemberCard: React.FC<{ member: MemberDetails, onPress: () => void }> = Rea
             <View style={styles.profileInfo}>
               <Text style={styles.name}>{member.fullName}</Text>
               <View style={styles.locationRow}>
-                <MaterialIcons name="location-on" size={16} color="#666" />
+                <MaterialIcons name="location-on" size={16} color="#6B46C1" />
                 <Text style={styles.locationText}>{member.address}</Text>
               </View>
               <View style={styles.phoneRow}>
-                <MaterialIcons name="phone" size={16} color="#666" />
+                <MaterialIcons name="phone" size={16} color="#6B46C1" />
                 <Text style={styles.phoneText}>{member.contactNumber}</Text>
               </View>
             </View>
           </View>
           <View style={styles.statusSection}>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>{member.status}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: member.status === "Active" ? "#E9D5FF" : "#FEE2E2" }]}>
+              <Text style={[styles.statusText, { color: member.status === "Active" ? "#6B46C1" : "#DC2626" }]}>
+                {member.status}
+              </Text>
             </View>
             <Text style={styles.seatText}>Seat: {member.seatNumber}</Text>
           </View>
@@ -98,31 +100,32 @@ const MemberCard: React.FC<{ member: MemberDetails, onPress: () => void }> = Rea
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     margin: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 5,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   avatarSection: {
     flexDirection: "row",
+    alignItems: "center",
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: "#6B46C1",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 16,
   },
   avatarText: {
     color: "white",
@@ -133,14 +136,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   name: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "600",
-    marginBottom: 4,
+    color: "#1F2937",
+    marginBottom: 6,
   },
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 2,
+    marginBottom: 4,
   },
   phoneRow: {
     flexDirection: "row",
@@ -148,31 +152,29 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 14,
-    color: "#666",
-    marginLeft: 4,
+    color: "#4B5563",
+    marginLeft: 6,
   },
   phoneText: {
     fontSize: 14,
-    color: "#666",
-    marginLeft: 4,
+    color: "#4B5563",
+    marginLeft: 6,
   },
   statusSection: {
     alignItems: "flex-end",
   },
   statusBadge: {
-    backgroundColor: "#E9D5FF",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginBottom: 6,
   },
   statusText: {
-    color: "#6B46C1",
     fontWeight: "600",
     fontSize: 12,
   },
   seatText: {
-    color: "#666",
+    color: "#4B5563",
     fontSize: 14,
   },
   planSection: {
@@ -189,12 +191,13 @@ const styles = StyleSheet.create({
   },
   planLabel: {
     fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
+    color: "#6B7280",
+    marginBottom: 6,
   },
   planValue: {
     fontSize: 16,
     fontWeight: "600",
+    color: "#1F2937",
   },
   amountSection: {
     flexDirection: "row",
@@ -206,8 +209,8 @@ const styles = StyleSheet.create({
   },
   amountLabel: {
     fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
+    color: "#6B7280",
+    marginBottom: 6,
   },
   finalAmount: {
     fontSize: 18,
@@ -225,11 +228,10 @@ const styles = StyleSheet.create({
     color: "#DC2626",
   },
   avatarImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
   },
 })
 
 export default MemberCard
-

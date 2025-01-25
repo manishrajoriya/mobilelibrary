@@ -1,51 +1,148 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { auth } from "@/utils/firebaseConfig"; // Import the Firebase auth instance
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+} from "firebase/auth";
+
+// Custom hook for Firebase auth logic
+const useAuth = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.replace("/(tabs)");
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return unsubscribe;
+  }, [router]);
+
+  const handleRegister = async (email: string, password: string) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      Alert.alert("Success", `User registered: ${userCredential.user.email}`);
+    } catch (error: any) {
+      Alert.alert("Error", getFriendlyErrorMessage(error.code));
+    }
+  };
+
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      Alert.alert("Success", `User logged in: ${userCredential.user.email}`);
+      router.push("/(tabs)");
+    } catch (error: any) {
+      Alert.alert("Error", getFriendlyErrorMessage(error.code));
+    }
+  };
+
+  const getFriendlyErrorMessage = (errorCode: string): string => {
+    switch (errorCode) {
+      case "auth/invalid-email":
+        return "Please enter a valid email address.";
+      case "auth/weak-password":
+        return "Password should be at least 6 characters.";
+      case "auth/email-already-in-use":
+        return "This email is already in use.";
+      case "auth/user-not-found":
+        return "No user found with this email.";
+      case "auth/wrong-password":
+        return "Incorrect password.";
+      default:
+        return "An error occurred. Please try again.";
+    }
+  };
+
+  return { isLoading, handleRegister, handleLogin };
+};
+
+const AuthForm: React.FC<{
+  email: string;
+  password: string;
+  isRegistering: boolean;
+  onEmailChange: (text: string) => void;
+  onPasswordChange: (text: string) => void;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+}> = ({ email, password, isRegistering, onEmailChange, onPasswordChange, onSubmit, isSubmitting }) => (
+  <View style={styles.formContainer}>
+    <TextInput
+      style={styles.input}
+      placeholder="Email"
+      keyboardType="email-address"
+      autoCapitalize="none"
+      value={email}
+      onChangeText={onEmailChange}
+      accessibilityLabel="Email input"
+    />
+
+    <TextInput
+      style={styles.input}
+      placeholder="Password"
+      secureTextEntry
+      value={password}
+      onChangeText={onPasswordChange}
+      accessibilityLabel="Password input"
+    />
+
+    <Button
+      title={isRegistering ? "Register" : "Login"}
+      onPress={onSubmit}
+      disabled={isSubmitting || !email || !password}
+      accessibilityLabel={isRegistering ? "Register button" : "Login button"}
+    />
+  </View>
+);
+
+const AuthToggle: React.FC<{
+  isRegistering: boolean;
+  onToggle: () => void;
+}> = ({ isRegistering, onToggle }) => (
+  <TouchableOpacity onPress={onToggle} style={styles.toggleContainer}>
+    <Text style={styles.toggleText}>
+      {isRegistering
+        ? "Already have an account? Login"
+        : "Don't have an account? Register"}
+    </Text>
+  </TouchableOpacity>
+);
 
 const AuthEmail: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // For checking initial auth state
-  const router = useRouter();
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check if the user is logged in when the component mounts
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // User is logged in, redirect to the main screen
-        router.replace("/(tabs)");
-      } else {
-        // User is not logged in, stop loading
-        setIsLoading(false);
-      }
-    });
+  const { isLoading, handleRegister, handleLogin } = useAuth();
 
-    // Cleanup the listener on unmount
-    return unsubscribe;
-  }, [router]);
-
-  // Handle user registration or login
   const handleAuth = async () => {
-    try {
-      if (isRegistering) {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        Alert.alert("Success", `User registered: ${userCredential.user.email}`);
-      } else {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        Alert.alert("Success", `User logged in: ${userCredential.user.email}`);
-        router.push("/(tabs)");
-      }
-    } catch (error: any) {
-      Alert.alert("Error", error.message);
+    setIsSubmitting(true);
+    if (isRegistering) {
+      await handleRegister(email, password);
+    } else {
+      await handleLogin(email, password);
     }
+    setIsSubmitting(false);
   };
 
   if (isLoading) {
-    // Show a loading spinner while checking the auth state
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color="#007BFF" />
@@ -57,33 +154,20 @@ const AuthEmail: React.FC = () => {
     <View style={styles.container}>
       <Text style={styles.title}>{isRegistering ? "Register" : "Login"}</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
+      <AuthForm
+        email={email}
+        password={password}
+        isRegistering={isRegistering}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onSubmit={handleAuth}
+        isSubmitting={isSubmitting}
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
+      <AuthToggle
+        isRegistering={isRegistering}
+        onToggle={() => setIsRegistering(!isRegistering)}
       />
-
-      <Button title={isRegistering ? "Register" : "Login"} onPress={handleAuth} />
-
-      <Text
-        style={styles.toggleText}
-        onPress={() => setIsRegistering(!isRegistering)}
-      >
-        {isRegistering
-          ? "Already have an account? Login"
-          : "Don't have an account? Register"}
-      </Text>
     </View>
   );
 };
@@ -97,6 +181,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     backgroundColor: "#f5f5f5",
+  },
+  formContainer: {
+    width: "100%",
   },
   title: {
     fontSize: 24,
@@ -112,8 +199,10 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     backgroundColor: "#fff",
   },
-  toggleText: {
+  toggleContainer: {
     marginTop: 15,
+  },
+  toggleText: {
     color: "#007BFF",
     textDecorationLine: "underline",
   },

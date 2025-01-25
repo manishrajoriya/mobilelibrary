@@ -24,39 +24,18 @@ import { onAuthStateChanged } from "firebase/auth";
 
 // Define the shape of each item
 interface Item {
-  id?: string; // Firestore will generate this ID
-  description: string;
-  amount: number;
-  type: "Earning" | "Expense";
-  userId: string;
+  readonly id?: string; // Firestore will generate this ID
+  readonly description: string;
+  readonly amount: number;
+  readonly type: "Earning" | "Expense";
+  readonly userId: string;
 }
 
-export default function Finance() {
+// Custom hook for Firebase operations
+const useFirebaseItems = (userId: string | null) => {
   const [items, setItems] = useState<Item[]>([]);
-  const [description, setDescription] = useState<string>("");
-  const [amount, setAmount] = useState<string>("");
-  const [isEarning, setIsEarning] = useState<boolean>(true);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-
   const itemsCollection = collection(db, "finance");
 
-  // Fetch the current user ID on app load
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUserId(user.uid);
-        fetchItems(user.uid);
-      } else {
-        setUserId(null);
-        setItems([]);
-      }
-    });
-
-    return unsubscribe; // Unsubscribe from the auth listener
-  }, []);
-
-  // Fetch items for the current user
   const fetchItems = async (uid: string) => {
     try {
       const q = query(itemsCollection, where("userId", "==", uid));
@@ -71,116 +50,119 @@ export default function Finance() {
     }
   };
 
-  // Add or update an item
- const handleAddOrUpdate = async () => {
-  if (!description || !amount) {
-    Alert.alert("Error", "Please enter both description and amount.");
-    return;
-  }
+  const addItem = async (item: Omit<Item, "id">) => {
+    try {
+      const docRef = await addDoc(itemsCollection, item);
+      setItems((prevItems) => [...prevItems, { ...item, id: docRef.id }]);
+    } catch (error) {
+      console.error("Error adding item:", error);
+    }
+  };
 
-  const parsedAmount = parseFloat(amount);
-  if (isNaN(parsedAmount) || parsedAmount <= 0) {
-    Alert.alert("Error", "Please enter a valid amount greater than 0.");
-    return;
-  }
-
-  try {
-    if (editingIndex !== null) {
-      // Update an existing item
-      const updatedItem: Item = {
-        ...items[editingIndex],
-        description,
-        amount: parsedAmount,
-        type: isEarning ? "Earning" : "Expense", // Explicitly set the type here
-      };
-
-      if (updatedItem.id) {
-        await updateDoc(doc(db, "items", updatedItem.id), {
-          description: updatedItem.description,
-          amount: updatedItem.amount,
-          type: updatedItem.type,
+  const updateItem = async (item: Item) => {
+    try {
+      if (item.id) {
+        await updateDoc(doc(db, "finance", item.id), {
+          description: item.description,
+          amount: item.amount,
+          type: item.type,
         });
+        setItems((prevItems) =>
+          prevItems.map((prevItem) => (prevItem.id === item.id ? item : prevItem))
+        );
       }
+    } catch (error) {
+      console.error("Error updating item:", error);
+    }
+  };
 
-      const updatedItems = [...items];
-      updatedItems[editingIndex] = updatedItem;
-      setItems(updatedItems);
+  const deleteItem = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "finance", id));
+      setItems((prevItems) => prevItems.filter((item) => item.id !== id));
+    } catch (error) {
+      console.error("Error deleting item:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (userId) {
+      fetchItems(userId);
+    }
+  }, [userId]);
+
+  return { items, addItem, updateItem, deleteItem };
+};
+
+const Finance: React.FC = () => {
+  const [description, setDescription] = useState<string>("");
+  const [amount, setAmount] = useState<string>("");
+  const [isEarning, setIsEarning] = useState<boolean>(true);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const { items, addItem, updateItem, deleteItem } = useFirebaseItems(userId);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserId(user.uid);
+      } else {
+        setUserId(null);
+      }
+    });
+
+    return unsubscribe; // Unsubscribe from the auth listener
+  }, []);
+
+  const handleAddOrUpdate = async () => {
+    if (!description || !amount) {
+      Alert.alert("Error", "Please enter both description and amount.");
+      return;
+    }
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      Alert.alert("Error", "Please enter a valid amount greater than 0.");
+      return;
+    }
+
+    const newItem: Omit<Item, "id"> = {
+      description,
+      amount: parsedAmount,
+      type: isEarning ? "Earning" : "Expense",
+      userId: userId!,
+    };
+
+    if (editingIndex !== null) {
+      const updatedItem = { ...items[editingIndex], ...newItem };
+      await updateItem(updatedItem);
       setEditingIndex(null);
     } else {
-      // Add a new item
-      const newItem: Omit<Item, "id"> = {
-        description,
-        amount: parsedAmount,
-        type: isEarning ? "Earning" : "Expense", // Explicitly set the type here
-        userId: userId!,
-      };
-
-      const docRef = await addDoc(itemsCollection, newItem);
-      setItems([...items, { ...newItem, id: docRef.id }]);
+      await addItem(newItem);
     }
 
     setDescription("");
     setAmount("");
-  } catch (error) {
-    console.error("Error adding or updating item:", error);
-  }
-};
+  };
 
-
-  // Delete an item
-  const handleDelete = async (index: number) => {
-    const item = items[index];
-    if (!item.id) return;
-
+  const handleDelete = (id: string) => {
     Alert.alert("Confirm Delete", "Are you sure you want to delete this entry?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteDoc(doc(db, "finance", item.id!));
-            setItems((prevItems) => prevItems.filter((_, i) => i !== index));
-          } catch (error) {
-            console.error("Error deleting item:", error);
-          }
-        },
+        onPress: () => deleteItem(id),
       },
     ]);
   };
 
-  // Calculate the total balance
   const calculateTotal = (): number => {
     return items.reduce(
       (acc, item) => (item.type === "Earning" ? acc + item.amount : acc - item.amount),
       0
     );
   };
-
-  // Render a single item
-  const renderItem = ({ item, index }: { item: Item; index: number }) => (
-    <View style={styles.item}>
-      <View>
-        <Text style={styles.itemDescription}>{item.description}</Text>
-        <Text
-          style={[
-            styles.itemAmount,
-            item.type === "Earning" ? styles.earning : styles.expense,
-          ]}
-        >
-          {item.type === "Earning" ? "+" : "-"}₹{item.amount.toFixed(2)}
-        </Text>
-      </View>
-      <View style={styles.actions}>
-        <TouchableOpacity onPress={() => handleEdit(index)}>
-          <Ionicons name="pencil" size={20} color="#4285F4" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleDelete(index)} style={{ marginLeft: 16 }}>
-          <Ionicons name="trash" size={20} color="#EA4335" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
 
   const handleEdit = (index: number) => {
     const item = items[index];
@@ -190,52 +172,30 @@ export default function Finance() {
     setEditingIndex(index);
   };
 
+  const renderItem = ({ item, index }: { item: Item; index: number }) => (
+    <ItemRow
+      item={item}
+      onEdit={() => handleEdit(index)}
+      onDelete={() => handleDelete(item.id!)}
+    />
+  );
+
   return (
     <View style={styles.container}>
-      
       <Text style={styles.header}>Earnings & Expenses Tracker</Text>
-      <Text style={styles.balance}>
-        Balance: ₹{calculateTotal().toFixed(2)}
-      </Text>
+      <Text style={styles.balance}>Balance: ₹{calculateTotal().toFixed(2)}</Text>
 
-      {/* Input Section */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="Amount"
-          value={amount}
-          onChangeText={setAmount}
-          style={styles.input}
-          keyboardType="numeric"
-        />
-        <TextInput
-          placeholder="Description"
-          value={description}
-          onChangeText={setDescription}
-          style={styles.input}
-        />
-        
-        <View style={styles.typeToggle}>
-          <TouchableOpacity
-            style={[styles.toggleButton, isEarning ? styles.active : {}]}
-            onPress={() => setIsEarning(true)}
-          >
-            <Text style={styles.toggleText}>Earning</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleButton, !isEarning ? styles.active : {}]}
-            onPress={() => setIsEarning(false)}
-          >
-            <Text style={styles.toggleText}>Expense</Text>
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity style={styles.addButton} onPress={handleAddOrUpdate}>
-          <Text style={styles.addButtonText}>
-            {editingIndex !== null ? "Update" : "Add"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <InputSection
+        description={description}
+        amount={amount}
+        isEarning={isEarning}
+        onDescriptionChange={setDescription}
+        onAmountChange={setAmount}
+        onToggleEarning={() => setIsEarning(!isEarning)}
+        onAddOrUpdate={handleAddOrUpdate}
+        isEditing={editingIndex !== null}
+      />
 
-      {/* List of Items */}
       <FlatList
         data={items}
         renderItem={renderItem}
@@ -244,8 +204,88 @@ export default function Finance() {
       />
     </View>
   );
-}
+};
 
+const ItemRow: React.FC<{
+  item: Item;
+  onEdit: () => void;
+  onDelete: () => void;
+}> = React.memo(({ item, onEdit, onDelete }) => (
+  <View style={styles.item}>
+    <View>
+      <Text style={styles.itemDescription}>{item.description}</Text>
+      <Text
+        style={[
+          styles.itemAmount,
+          item.type === "Earning" ? styles.earning : styles.expense,
+        ]}
+      >
+        {item.type === "Earning" ? "+" : "-"}₹{item.amount.toFixed(2)}
+      </Text>
+    </View>
+    <View style={styles.actions}>
+      <TouchableOpacity onPress={onEdit}>
+        <Ionicons name="pencil" size={20} color="#4285F4" />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={onDelete} style={{ marginLeft: 16 }}>
+        <Ionicons name="trash" size={20} color="#EA4335" />
+      </TouchableOpacity>
+    </View>
+  </View>
+));
+
+const InputSection: React.FC<{
+  description: string;
+  amount: string;
+  isEarning: boolean;
+  onDescriptionChange: (text: string) => void;
+  onAmountChange: (text: string) => void;
+  onToggleEarning: () => void;
+  onAddOrUpdate: () => void;
+  isEditing: boolean;
+}> = ({
+  description,
+  amount,
+  isEarning,
+  onDescriptionChange,
+  onAmountChange,
+  onToggleEarning,
+  onAddOrUpdate,
+  isEditing,
+}) => (
+  <View style={styles.inputContainer}>
+    <TextInput
+      placeholder="Amount"
+      value={amount}
+      onChangeText={onAmountChange}
+      style={styles.input}
+      keyboardType="numeric"
+    />
+    <TextInput
+      placeholder="Description"
+      value={description}
+      onChangeText={onDescriptionChange}
+      style={styles.input}
+    />
+    <View style={styles.typeToggle}>
+      <TouchableOpacity
+        style={[styles.toggleButton, isEarning ? styles.active : {}]}
+        onPress={onToggleEarning}
+      >
+        <Text style={styles.toggleText}>Earning</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.toggleButton, !isEarning ? styles.active : {}]}
+        onPress={onToggleEarning}
+      >
+        <Text style={styles.toggleText}>Expense</Text>
+      </TouchableOpacity>
+    </View>
+    <TouchableOpacity style={styles.addButton} onPress={onAddOrUpdate}>
+      <Text style={styles.addButtonText}>{isEditing ? "Update" : "Add"}</Text>
+    </TouchableOpacity>
+  </View>
+);
 
 // Styles
 const styles = StyleSheet.create({
@@ -359,3 +399,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
 });
+
+export default Finance;

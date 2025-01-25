@@ -1,39 +1,47 @@
-import type React from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native"
+import type React from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 
 interface Feature {
-  name: string
-  included: boolean
+  readonly name: string;
+  readonly included: boolean;
 }
 
 interface PricingTier {
-  name: string
-  price: string
-  features: Feature[]
+  readonly name: string;
+  readonly price: string;
+  readonly features: Feature[];
 }
 
 interface PricingTierProps {
-  tier: PricingTier
-  isPopular?: boolean
+  readonly tier: PricingTier;
+  readonly isPopular?: boolean;
 }
 
-const PricingTier: React.FC<PricingTierProps> = ({ tier, isPopular }) => (
-  <View style={[styles.tierContainer, isPopular && styles.popularTier]}>
-    {isPopular && <Text style={styles.popularBadge}>Most Popular</Text>}
+const PricingTier: React.FC<PricingTierProps> = (({ tier, isPopular }) => (
+  <View style={StyleSheet.flatten([styles.tierContainer, isPopular && styles.popularTier])}>
+    {isPopular && (
+      <Text style={styles.popularBadge} accessibilityLabel="Most Popular Plan">
+        Most Popular
+      </Text>
+    )}
     <Text style={styles.tierName}>{tier.name}</Text>
     <Text style={styles.tierPrice}>{tier.price}</Text>
     <View style={styles.featuresContainer}>
       {tier.features.map((feature, index) => (
-        <Text key={index} style={[styles.feature, !feature.included && styles.featureDisabled]}>
+        <Text
+          key={index}
+          style={StyleSheet.flatten([styles.feature, !feature.included && styles.featureDisabled])}
+          accessibilityLabel={`${feature.name} is ${feature.included ? "included" : "not included"}`}
+        >
           {feature.included ? "✓" : "✗"} {feature.name}
         </Text>
       ))}
     </View>
-    <TouchableOpacity style={styles.button}>
+    <TouchableOpacity style={styles.button} accessibilityRole="button">
       <Text style={styles.buttonText}>Choose Plan</Text>
     </TouchableOpacity>
   </View>
-)
+));
 
 const PricingSection: React.FC = () => {
   const pricingTiers: PricingTier[] = [
@@ -67,17 +75,19 @@ const PricingSection: React.FC = () => {
         { name: "Feature 4", included: true },
       ],
     },
-  ]
+  ];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Choose Your Plan</Text>
+      <Text style={styles.title} accessibilityRole="header">
+        Choose Your Plan
+      </Text>
       {pricingTiers.map((tier, index) => (
-        <PricingTier key={index} tier={tier} isPopular={index === 1} />
+        <PricingTier key={tier.name} tier={tier} isPopular={index === 1} />
       ))}
     </ScrollView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -150,7 +160,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-})
+});
 
-export default PricingSection
-
+export default PricingSection;

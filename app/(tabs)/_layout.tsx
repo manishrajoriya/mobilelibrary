@@ -5,7 +5,7 @@ import { Stack } from 'expo-router'
 
 const tabsLayout = () => {
   return (
-    <Stack >
+    <Stack screenOptions={{animation:'slide_from_right'}}>
     <Stack.Screen name="index" options={{ headerShown: false }}/>
     <Stack.Screen name="addMemberForm" options={{ headerTitle: 'Add Member' }}  />
     <Stack.Screen name="memberProfileCard" options={{ headerTitle: 'Member Profile' }} />

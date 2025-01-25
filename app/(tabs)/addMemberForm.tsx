@@ -1,14 +1,14 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import AddMemberForm from '@/component/AddMemberForm';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 
 const AddMemberFormScreen = () => {
   return (
-   <SafeAreaProvider>
+   <ScrollView>
       <AddMemberForm />
-    </SafeAreaProvider>
+    </ScrollView>
   );
 }
 
