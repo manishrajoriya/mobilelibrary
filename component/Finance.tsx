@@ -344,14 +344,14 @@ const styles = StyleSheet.create({
   },
   active: {
     backgroundColor: "#e0f7fa",
-    borderColor: "#00796b",
+    borderColor: "#6B46C1",
   },
   toggleText: {
     fontSize: 16,
     color: "#333",
   },
   addButton: {
-    backgroundColor: "#34A853",
+    backgroundColor: "#6B46C1",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",

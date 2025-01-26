@@ -73,7 +73,7 @@ const MemberDetails: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#00A0E3" />
+        <ActivityIndicator size="large" color="#6B46C1" />
       </View>
     );
   }
@@ -116,37 +116,37 @@ const MemberDetails: React.FC = () => {
           value={member.addmissionDate.toDateString()}
           icon={<MaterialIcons name="event" size={16} color="#6B46C1" />}
         />
-        <DetailRow
+       {/* <DetailRow
           label="Date Of Birth"
           value="NA"
           icon={<MaterialIcons name="cake" size={16} color="#6B46C1" />}
-        />
+        /> */}
         <DetailRow
           label="Email"
           value={member.email}
           icon={<MaterialIcons name="email" size={16} color="#6B46C1" />}
         />
-        <DetailRow
+        {/* <DetailRow
           label="Gender"
           value="Male"
           icon={<MaterialIcons name="wc" size={16} color="#6B46C1" />}
-        />
-        <DetailRow
+        /> */}
+        {/* <DetailRow
           label="Company:"
           value="NA"
           icon={<MaterialIcons name="business" size={16} color="#6B46C1" />}
-        />
-        <DetailRow
+        /> */}
+        {/* <DetailRow
           label="Marriage Anniversary"
           value="NA"
           icon={<MaterialIcons name="favorite" size={16} color="#6B46C1" />}
-        />
-        <DetailRow
+        /> */}
+        {/* <DetailRow
           label="Home Phone"
           value="NA"
           icon={<MaterialIcons name="phone" size={16} color="#6B46C1" />}
-        />
-        <DetailRow
+        /> */}
+        {/* <DetailRow
           label="Care of (c/o)"
           value="NA"
           icon={<MaterialIcons name="person-outline" size={16} color="#6B46C1" />}
@@ -155,7 +155,7 @@ const MemberDetails: React.FC = () => {
           label="Remark"
           value="NA"
           icon={<MaterialIcons name="comment" size={16} color="#6B46C1" />}
-        />
+        /> */}
       </View>
 
       {/* Attendance Report */}
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
   },
   header: {
-    backgroundColor: "#00A0E3",
+    backgroundColor: "#6B46C1",
     padding: 20,
     flexDirection: "row",
     alignItems: "center",
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#9DE7BF",
+    backgroundColor: "#6B46C1",
     borderWidth: 2,
     borderColor: "#fff",
   },

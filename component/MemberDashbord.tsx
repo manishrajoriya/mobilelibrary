@@ -17,7 +17,7 @@ import {
   dueAmountCount,
 } from "@/firebase/functions";
 import { useRouter } from "expo-router";
-import AddMemberForm from "./AddMemberForm";
+
 
 const StatCard = ({
   icon,
@@ -167,7 +167,7 @@ export default function MembersDashboard() {
           <Text style={styles.profileName}>Manish Rajoriya</Text>
         </View>
         <TouchableOpacity>
-          <Ionicons name="chevron-down" size={24} color="#666" />
+          <Ionicons name="chevron-down" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: 20,
-    backgroundColor: "#00A0E3",
+    backgroundColor: "#6B46C1",
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
     shadowColor: "#000",

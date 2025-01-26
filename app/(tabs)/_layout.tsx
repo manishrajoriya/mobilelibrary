@@ -13,6 +13,7 @@ const tabsLayout = () => {
     <Stack.Screen name="shiftDetails" options={{ headerTitle: 'Shift Details' }} /> */}
     <Stack.Screen name="financeScreen" options={{ headerTitle: 'Finance' }} />
     <Stack.Screen name="memberData" options={{ headerTitle: 'Member Data' }} />
+
   </Stack>
   )
 }

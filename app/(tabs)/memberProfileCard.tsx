@@ -7,7 +7,6 @@ const MemberProfileCard = () => {
 
     return (
         <>
-       
         <MemberProfileCards/>
         </>
     );

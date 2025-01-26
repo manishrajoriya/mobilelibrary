@@ -12,8 +12,11 @@ import AddMemberForm from "./AddMemberForm";
 import ShiftDetails from "./ShiftDetails";
 import Finance from "./Finance";
 import PricingSection from "./Pricing";
-import SeatManagementScreen from "./Seat";
+import SeatsPage from "./Seat";
 import WhatsAppMessageScreen from "./WhatsappMessage";
+import AttendancePage from "./member/Attendance";
+import AttendanceReport from "./member/AttendaceReport";
+import AllotSeat from "./member/AllotSeat";
 
 type DrawerParamList = {
   Home: undefined;
@@ -25,6 +28,9 @@ type DrawerParamList = {
   Pricing: undefined;
   SeatManagement: undefined;
   WhatsAppMessage: undefined;
+  Attendance: undefined;
+  AttendanceReport: undefined;
+  AllotSeat: undefined;
 };
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
@@ -175,7 +181,7 @@ const Sidebar = () => {
 
       <Drawer.Screen
         name="SeatManagement"
-        component={SeatManagementScreen}
+        component={SeatsPage}
         options={{
           title: "Seat Management",
           drawerIcon: ({ color, size }) => (
@@ -190,6 +196,36 @@ const Sidebar = () => {
           title: "WhatsApp Message",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="chatbox-ellipses-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Attendance"
+        component={AttendancePage}
+        options={{
+          title: "Attendance",
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="calendar-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="AttendanceReport"
+        component={AttendanceReport}
+        options={{
+          title: "Attendance Report",
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="calendar-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="AllotSeat"
+        component={AllotSeat}
+        options={{
+          title: "Allot Seat",
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="fitness-outline" size={size} color={color} />
           ),
         }}
       />

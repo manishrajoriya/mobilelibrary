@@ -15,9 +15,11 @@ export interface MemberDetails {
   status: string
   totalAmount: string
   plan?: string
+ 
   createdAt?: Date
   updatedAt?: Date
 }
+
 
 
 
@@ -30,6 +32,8 @@ export interface ProfileData {
   gender: 'Male' | 'Female' | 'Other';
   plan: PlanDetails;
 }
+
+
 
 export interface PlanDetails {
   name: string;
@@ -54,3 +58,37 @@ export interface BillDetails {
   paidAmount: string;
 }
 
+
+
+export interface FormData {
+  fullName: string;
+  address: string;
+  contactNumber: string;
+  email: string;
+  plan: string;
+  totalAmount: string;
+  paidAmount: string;
+  dueAmount: string;
+  profileImage: string;
+  document: string;
+  admissionDate: Date;
+  expiryDate: Date;
+  status: string;
+  seatNumber: string;
+  planId: string;
+}
+
+export interface PlanData {
+  id: string;
+  name: string;
+  description: string | null;
+  duration: string; // Duration in days
+  amount: string;
+}
+
+export interface SeatData {
+  id: string;
+  seatId: string;
+  isAllocated: boolean;
+  allocatedTo: string | null;
+}
