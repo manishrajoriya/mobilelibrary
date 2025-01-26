@@ -12,6 +12,7 @@ export default function Index() {
    
    <SafeAreaProvider>
    <Onboarding/>
+  
       <Toast/>
     </SafeAreaProvider>
  

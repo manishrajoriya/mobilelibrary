@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 
-import { auth } from '@/utils/firebaseConfig';
+import { auth } from '../utils/firebaseConfig';
 import PhoneInput from 'react-native-phone-number-input';
 import { signInWithPhoneNumber, PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
 const App = () => {

@@ -18,7 +18,7 @@ import { addMember, getPlans, getPlanById } from "@/firebase/functions";
 import Toast from "react-native-toast-message";
 import * as ImagePicker from "expo-image-picker";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "@/utils/firebaseConfig";
+import { storage } from "../utils/firebaseConfig";
 
 interface FormData {
   fullName: string;

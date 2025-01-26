@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { auth } from "@/utils/firebaseConfig"; // Import the Firebase auth instance
+import { auth } from "../utils/firebaseConfig"; // Import the Firebase auth instance
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,

@@ -9,7 +9,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { db, auth } from "@/utils/firebaseConfig"; // Import Firebase config and auth
+import { db, auth} from "../utils/firebaseConfig" // Import Firebase config and auth
 import {
   collection,
   addDoc,

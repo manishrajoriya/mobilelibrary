@@ -1,15 +1,18 @@
 // import firestore from '@react-native-firebase/firestore';
-import { db } from "@/utils/firebaseConfig";
+
+
 import { collection, addDoc,getDoc, where, query, getDocs, startAfter,
    type QueryDocumentSnapshot,
   type DocumentData, limit, orderBy, 
-  or,
   updateDoc,
   doc,
   deleteDoc} from "firebase/firestore"; 
-import { auth } from "@/utils/firebaseConfig";
+
 import {getAuth, } from "firebase/auth"
-import { useAuth } from "./authContext";
+import { db } from "@/utils/firebaseConfig";
+
+
+
 
 
 // Define the plan data type
@@ -126,41 +129,78 @@ export async function deletePlan({ id }: { id: string }) {
 export async function addMember({ data }: { data: any }) {
   try {
     // Get the current user
-    const currentUser =  getAuth().currentUser
+    const currentUser = getAuth().currentUser;
     if (!currentUser) {
-      throw new Error('User not authenticated. Redirecting to sign-in...');
+      throw new Error("User not authenticated. Redirecting to sign-in...");
     }
 
-    // Create the plan in the Firestore database
-   const memberRef = await addDoc(collection(db, 'members'), {
-        admin: currentUser.uid,
-        fullName: data?.fullName,
-        address:  data?.address,
-        contactNumber: data?.contactNumber,
-        email: data?.email,
-        addmissionDate: data?.admissionDate,
-        expiryDate: data?.expiryDate,
-        status: data?.status,
-        seatNumber: data?.seatNumber,
-        profileImage: data?.profileImage,
-        document: data?.document,
-        dueAmount: data?.dueAmount,
-        totalAmount: data?.totalAmount,
-        paidAmount: data?.paidAmount,
-        planId: data?.planId,
-        plan: data?.plan,
-        createdAt: new Date(),
-        updatedAt: new Date()
-   });
+    // Check if the membership is already expired
+    const expiryDate = new Date(data.expiryDate);
+    const currentDate = new Date();
+    const status = expiryDate <= currentDate ? "Expired" : data.status;
 
-    console.log('Member created successfully with ID:', memberRef.id);
+    // Create the member in the Firestore database
+    const memberRef = await addDoc(collection(db, "members"), {
+      admin: currentUser.uid,
+      fullName: data?.fullName,
+      address: data?.address,
+      contactNumber: data?.contactNumber,
+      email: data?.email,
+      addmissionDate: data?.admissionDate,
+      expiryDate: data?.expiryDate,
+      status: status, // Set status based on expiry date
+      seatNumber: data?.seatNumber,
+      profileImage: data?.profileImage,
+      document: data?.document,
+      dueAmount: data?.dueAmount,
+      totalAmount: data?.totalAmount,
+      paidAmount: data?.paidAmount,
+      planId: data?.planId,
+      plan: data?.plan,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    console.log("Member created successfully with ID:", memberRef.id);
     return memberRef.id;
   } catch (error: any) {
-    console.error('Unable to create member:', error.message);
+    console.error("Unable to create member:", error.message);
     throw error; // Re-throw the error for handling by the caller
   }
 }
 
+export async function updateExpiredMembers() {
+  try {
+    // Get the current date
+    const currentDate = new Date();
+
+    // Query members whose expiryDate is in the past and status is not "expired"
+    const membersRef = collection(db, "members");
+    const q = query(
+      membersRef,
+      where("expiryDate", "<=", currentDate),
+      where("status", "!=", "expired") // Only update members who are not already marked as expired
+    );
+
+    // Fetch the matching members
+    const querySnapshot = await getDocs(q);
+
+    // Update each member's status to "expired"
+    querySnapshot.forEach(async (memberDoc) => {
+      const memberRef = doc(db, "members", memberDoc.id);
+      await updateDoc(memberRef, {
+        status: "expired",
+        updatedAt: new Date(), // Update the last modified timestamp
+      });
+      console.log(`Member ${memberDoc.id} status updated to "expired".`);
+    });
+
+    console.log("Expired members updated successfully.");
+  } catch (error: any) {
+    console.error("Error updating expired members:", error.message);
+    throw error; // Re-throw the error for handling by the caller
+  }
+}
 
 export async function getMembers(pageSize: number = 5, lastVisible?: QueryDocumentSnapshot<DocumentData>) {
   try {
@@ -213,6 +253,157 @@ export async function getMembers(pageSize: number = 5, lastVisible?: QueryDocume
     return { members, lastVisibleDoc, hasMore };
   } catch (error: any) {
     console.error("Unable to get members:", error.message);
+    throw error;
+  }
+}
+export async function getExpiredMembers(pageSize: number = 5, lastVisible?: QueryDocumentSnapshot<DocumentData>) {
+  try {
+    const currentUser = getAuth().currentUser;
+    if (!currentUser) {
+      throw new Error("User not authenticated. Redirecting to sign-in...");
+    }
+
+    let q = query(
+      collection(db, "members"),
+      where("admin", "==", currentUser.uid),
+      where("expiryDate", "<", new Date()),
+      where("status", "==", "Expired"),
+      orderBy("createdAt", "desc"),
+      limit(pageSize)
+    );
+
+    // Apply pagination if a last visible document exists
+    if (lastVisible) {
+      q = query(q, startAfter(lastVisible));
+    }
+
+    const membersSnapshot = await getDocs(q);
+
+    const members = membersSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      fullName: doc.data().fullName,
+      address: doc.data().address,
+      contactNumber: doc.data().contactNumber,
+      email: doc.data().email,
+      addmissionDate: doc.data().addmissionDate.toDate(),
+      expiryDate: doc.data().expiryDate.toDate(),
+      status: doc.data().status,
+      seatNumber: doc.data().seatNumber,
+      profileImage: doc.data().profileImage,
+      document: doc.data().document,
+      dueAmount: doc.data().dueAmount,
+      totalAmount: doc.data().totalAmount,
+      paidAmount: doc.data().paidAmount,
+      planId: doc.data().planId,
+      plan: doc.data().plan,
+      createdAt: doc.data().createdAt,
+      updatedAt: doc.data().updatedAt,
+    }));
+
+    // Get the last document for pagination
+    const lastVisibleDoc = membersSnapshot.docs[membersSnapshot.docs.length - 1];
+
+    // Determine if there are more members to fetch
+    const hasMore = membersSnapshot.docs.length === pageSize;
+
+    return { members, lastVisibleDoc, hasMore };
+  } catch (error: any) {
+    console.error("Unable to get members:", error.message);
+    throw error;
+  }
+}
+export async function getLiveMembers(pageSize: number = 5, lastVisible?: QueryDocumentSnapshot<DocumentData>) {
+  try {
+    const currentUser = getAuth().currentUser;
+    if (!currentUser) {
+      throw new Error("User not authenticated. Redirecting to sign-in...");
+    }
+
+    let q = query(
+      collection(db, "members"),
+      where("admin", "==", currentUser.uid),
+      where("status", "==", "Live"),
+      where("expiryDate", ">", new Date()),
+      orderBy("createdAt", "desc"),
+      limit(pageSize)
+    );
+
+    // Apply pagination if a last visible document exists
+    if (lastVisible) {
+      q = query(q, startAfter(lastVisible));
+    }
+
+    const membersSnapshot = await getDocs(q);
+
+    const members = membersSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      fullName: doc.data().fullName,
+      address: doc.data().address,
+      contactNumber: doc.data().contactNumber,
+      email: doc.data().email,
+      addmissionDate: doc.data().addmissionDate.toDate(),
+      expiryDate: doc.data().expiryDate.toDate(),
+      status: doc.data().status,
+      seatNumber: doc.data().seatNumber,
+      profileImage: doc.data().profileImage,
+      document: doc.data().document,
+      dueAmount: doc.data().dueAmount,
+      totalAmount: doc.data().totalAmount,
+      paidAmount: doc.data().paidAmount,
+      planId: doc.data().planId,
+      plan: doc.data().plan,
+      createdAt: doc.data().createdAt,
+      updatedAt: doc.data().updatedAt,
+    }));
+
+    // Get the last document for pagination
+    const lastVisibleDoc = membersSnapshot.docs[membersSnapshot.docs.length - 1];
+
+    // Determine if there are more members to fetch
+    const hasMore = membersSnapshot.docs.length === pageSize;
+
+    return { members, lastVisibleDoc, hasMore };
+  } catch (error: any) {
+    console.error("Unable to get members:", error.message);
+    throw error;
+  }
+}
+
+export async function updateMember({ id, data }: { id: string, data: any }) {
+  try {
+    const memberRef = doc(db, 'members', id)
+    await updateDoc(memberRef, {
+      fullName: data?.fullName,
+      address:  data?.address,
+      contactNumber: data?.contactNumber,
+      email: data?.email,
+      addmissionDate: data?.admissionDate,
+      expiryDate: data?.expiryDate,
+      status: data?.status,
+      seatNumber: data?.seatNumber,
+      profileImage: data?.profileImage,
+      document: data?.document,
+      dueAmount: data?.dueAmount,
+      totalAmount: data?.totalAmount,
+      paidAmount: data?.paidAmount,
+      planId: data?.planId,
+      plan: data?.plan,
+      updatedAt: new Date()
+    })
+    return id
+  } catch (error: any) {
+    console.error('Unable to update member:', error.message);
+    throw error;
+  }
+}
+
+export async function deleteMember({ id }: { id: string }) {
+  try {
+    const memberRef = doc(db, 'members', id)
+    await deleteDoc(memberRef)
+    return id
+  } catch (error: any) {
+    console.error('Unable to delete member:', error.message);
     throw error;
   }
 }

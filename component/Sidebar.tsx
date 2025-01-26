@@ -1,9 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
-  DrawerItemList,
 } from "@react-navigation/drawer";
 import { Ionicons } from "@expo/vector-icons"; // Use Expo or your preferred icon library
 import MembersDashboard from "./MemberDashbord";
@@ -13,7 +12,6 @@ import AddMemberForm from "./AddMemberForm";
 import ShiftDetails from "./ShiftDetails";
 import Finance from "./Finance";
 import PricingSection from "./Pricing";
-import GymProfile from "./MemberData";
 import SeatManagementScreen from "./Seat";
 import WhatsAppMessageScreen from "./WhatsappMessage";
 
@@ -25,7 +23,6 @@ type DrawerParamList = {
   ShiftDetails: undefined;
   Finance: undefined;
   Pricing: undefined;
-  GymProfile: undefined;
   SeatManagement: undefined;
   WhatsAppMessage: undefined;
 };
@@ -39,8 +36,43 @@ const CustomDrawerContent = (props: any) => {
       <View style={styles.drawerHeader}>
         <Text style={styles.headerText}>Welcome!</Text>
       </View>
-      {/* Drawer Items */}
-      <DrawerItemList {...props} />
+
+      {/* Drawer Items with Dividers */}
+      {props.state.routes.map((route: any, index: number) => {
+        const { options } = props.descriptors[route.key];
+        const isFocused = props.state.index === index;
+
+        return (
+          <View key={route.key}>
+            <TouchableOpacity
+              style={[
+                styles.drawerItem,
+                isFocused && styles.activeDrawerItem,
+              ]}
+              onPress={() => props.navigation.navigate(route.name)}
+            >
+              <Ionicons
+                name={options.drawerIcon?.({ color: "#555", size: 24 }).props.name}
+                size={24}
+                color={isFocused ? "#6B46C1" : "#555"}
+                style={styles.icon}
+              />
+              <Text
+                style={[
+                  styles.drawerLabel,
+                  isFocused && styles.activeDrawerLabel,
+                ]}
+              >
+                {options.title || route.name}
+              </Text>
+            </TouchableOpacity>
+            {/* Add a divider after each item except the last one */}
+            {index !== props.state.routes.length - 1 && (
+              <View style={styles.divider} />
+            )}
+          </View>
+        );
+      })}
     </DrawerContentScrollView>
   );
 };
@@ -68,19 +100,13 @@ const Sidebar = () => {
           marginHorizontal: 8,
           marginVertical: 4,
         },
-        drawerIcon: ({ focused, size, color }) => (
-          <Ionicons
-            name={focused ? "home" : "home-outline"}
-            size={size}
-            color={color}
-          />
-        ),
       }}
     >
       <Drawer.Screen
         name="Home"
         component={MembersDashboard}
         options={{
+          title: "Home",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
@@ -90,6 +116,7 @@ const Sidebar = () => {
         name="Profile"
         component={MemberProfileCard}
         options={{
+          title: "Profile",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
@@ -99,6 +126,7 @@ const Sidebar = () => {
         name="ShiftForm"
         component={ShiftForm}
         options={{
+          title: "Shift Form",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" size={size} color={color} />
           ),
@@ -108,6 +136,7 @@ const Sidebar = () => {
         name="AddMemberForm"
         component={AddMemberForm}
         options={{
+          title: "Add Member",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="person-add-outline" size={size} color={color} />
           ),
@@ -117,6 +146,7 @@ const Sidebar = () => {
         name="ShiftDetails"
         component={ShiftDetails}
         options={{
+          title: "Shift Details",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="document-outline" size={size} color={color} />
           ),
@@ -126,6 +156,7 @@ const Sidebar = () => {
         name="Finance"
         component={Finance}
         options={{
+          title: "Finance",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="wallet-outline" size={size} color={color} />
           ),
@@ -135,24 +166,18 @@ const Sidebar = () => {
         name="Pricing"
         component={PricingSection}
         options={{
+          title: "Pricing",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="pricetag-outline" size={size} color={color} />
           ),
         }}
       />
-      <Drawer.Screen
-        name="GymProfile"
-        component={GymProfile}
-        options={{
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="fitness-outline" size={size} color={color} />
-          ),
-        }}
-      />
+
       <Drawer.Screen
         name="SeatManagement"
         component={SeatManagementScreen}
         options={{
+          title: "Seat Management",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="fitness-outline" size={size} color={color} />
           ),
@@ -162,6 +187,7 @@ const Sidebar = () => {
         name="WhatsAppMessage"
         component={WhatsAppMessageScreen}
         options={{
+          title: "WhatsApp Message",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="chatbox-ellipses-outline" size={size} color={color} />
           ),
@@ -187,6 +213,34 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 22,
     fontWeight: "bold",
+  },
+  drawerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  activeDrawerItem: {
+    backgroundColor: "#6B46C110",
+    borderRadius: 8,
+  },
+  drawerLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#555",
+    marginLeft: 10,
+  },
+  activeDrawerLabel: {
+    color: "#6B46C1",
+  },
+  icon: {
+    marginRight: 8,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#e0e0e0",
+    marginHorizontal: 16,
+    marginVertical: 4,
   },
 });
 
