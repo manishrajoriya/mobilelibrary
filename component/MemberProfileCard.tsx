@@ -131,7 +131,7 @@ const MemberProfileCards: React.FC = () => {
 
   // Handle member click
   const handleMemberClick = (id: string) => {
-    router.push(`/(tabs)/memberData?id=${id}`);
+    router.push(`/memberdata?id=${id}`);
   };
 
   // Render member card

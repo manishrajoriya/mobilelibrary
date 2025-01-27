@@ -6,9 +6,12 @@ export default function RootLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-       <Stack.Screen name="data" />
-      <Stack.Screen name="(tabs)" />
 
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="memberdata" />
+      <Stack.Screen name="memberProfileCard" />
+      <Stack.Screen name="addMemberForm" />
+      <Stack.Screen name="finance" />
     </Stack>
   )
 }

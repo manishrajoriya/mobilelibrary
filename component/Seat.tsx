@@ -1,101 +1,188 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons'; // Import Expo Vector Icons
-import { fetchSeats } from '@/firebase/functions'; // Adjust the import path
+import type React from "react"
+import { useState, useEffect } from "react"
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, FlatList } from "react-native"
+import { addSeats, fetchSeats } from "@/firebase/functions"
+import { useNavigation } from "@react-navigation/native"
 
-const SeatsPage = () => {
-  const [seats, setSeats] = useState([]);
-  const [loading, setLoading] = useState(false);
+interface Seat {
+  id: string
+  seatId: string
+  isAllocated: boolean
+}
 
-  // Fetch seats on component mount
+const AddSeatsPage: React.FC = () => {
+  const [numberOfSeats, setNumberOfSeats] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [seats, setSeats] = useState<Seat[]>([])
+  const navigation = useNavigation()
+
   useEffect(() => {
-    loadSeats();
-  }, []);
+    loadSeats()
+  }, [])
 
   const loadSeats = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const fetchedSeats = await fetchSeats();
-      setSeats(fetchedSeats);
+      const fetchedSeats = await fetchSeats()
+      setSeats(fetchedSeats)
     } catch (error) {
-      console.error('Error fetching seats:', error);
+      console.error("Error fetching seats:", error)
+      Alert.alert("Error", "Failed to fetch seats. Please try again.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const renderSeat = ({ item }) => (
+  const handleAddSeats = async () => {
+    if (!numberOfSeats || Number.parseInt(numberOfSeats) <= 0) {
+      Alert.alert("Error", "Please enter a valid number of seats.")
+      return
+    }
+
+    setLoading(true)
+    try {
+      const result = await addSeats(Number.parseInt(numberOfSeats))
+      Alert.alert("Success", result)
+      setNumberOfSeats("")
+      await loadSeats() // Reload seats after adding new ones
+    } catch (error) {
+      Alert.alert("Error: Something went wrong")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const renderSeat = ({ item }: { item: Seat }) => (
     <View style={styles.seatItem}>
-      <MaterialIcons
-        name={item.isAllocated ? 'event-seat' : 'chair'}
-        size={24}
-        color={item.isAllocated ? 'red' : 'green'} // Red for allocated, green for available
-      />
       <Text style={styles.seatText}>{item.seatId}</Text>
-      {item.isAllocated ? (
-        <Text style={styles.allocatedText}>Allocated to: {item.allocatedTo}</Text>
-      ) : (
-        <Text style={styles.availableText}>Available</Text>
-      )}
+      <Text style={[styles.statusText, item.isAllocated ? styles.allocatedStatus : styles.availableStatus]}>
+        {item.isAllocated ? "Allocated" : "Available"}
+      </Text>
     </View>
-  );
+  )
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Seats</Text>
-
-      {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />
-      ) : (
-        <FlatList
-          data={seats}
-          renderItem={renderSeat}
-          keyExtractor={(item) => item.id}
-          style={styles.seatList}
+      <Text style={styles.title}>Add Seats</Text>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          value={numberOfSeats}
+          onChangeText={setNumberOfSeats}
+          placeholder="Enter number of seats"
+          keyboardType="numeric"
         />
+        <TouchableOpacity
+          style={[styles.button, { opacity: loading ? 0.5 : 1 }]}
+          onPress={handleAddSeats}
+          disabled={loading}
+        >
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Add Seats</Text>}
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.subtitle}>Current Seats:</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color="#007bff" style={styles.loader} />
+      ) : (
+        <FlatList data={seats} renderItem={renderSeat} keyExtractor={(item) => item.id} style={styles.seatList} />
       )}
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Text style={styles.backButtonText}>Back to Seat Allocation</Text>
+      </TouchableOpacity>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
+    marginBottom: 16,
+    color: "#333",
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 20,
+    marginBottom: 10,
+    color: "#333",
+  },
+  inputContainer: {
+    flexDirection: "row",
     marginBottom: 16,
   },
-  seatList: {
-    marginTop: 16,
+  input: {
+    flex: 1,
+    height: 40,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    backgroundColor: "#fff",
+    marginRight: 8,
   },
-  seatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+  button: {
+    backgroundColor: "#007bff",
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 100,
   },
-  seatText: {
-    marginLeft: 8,
+  buttonText: {
+    color: "#fff",
     fontSize: 16,
-  },
-  allocatedText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: 'red', // Red for allocated seats
-  },
-  availableText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: 'green', // Green for available seats
+    fontWeight: "bold",
   },
   loader: {
-    marginTop: 20,
+    flex: 1,
+    justifyContent: "center",
   },
-});
+  seatList: {
+    flex: 1,
+  },
+  seatItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    backgroundColor: "#fff",
+  },
+  seatText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  allocatedStatus: {
+    color: "red",
+  },
+  availableStatus: {
+    color: "green",
+  },
+  backButton: {
+    backgroundColor: "#6c757d",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  backButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+})
 
-export default SeatsPage;
+export default AddSeatsPage
+

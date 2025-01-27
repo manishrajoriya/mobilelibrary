@@ -1,39 +1,36 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import {
-  createDrawerNavigator,
-  DrawerContentScrollView,
-} from "@react-navigation/drawer";
-import { Ionicons } from "@expo/vector-icons"; // Use Expo or your preferred icon library
-import MembersDashboard from "./MemberDashbord";
-import MemberProfileCard from "./MemberProfileCard";
-import ShiftForm from "./ShiftForm";
-import AddMemberForm from "./AddMemberForm";
-import ShiftDetails from "./ShiftDetails";
-import Finance from "./Finance";
-import PricingSection from "./Pricing";
-import SeatsPage from "./Seat";
-import WhatsAppMessageScreen from "./WhatsappMessage";
-import AttendancePage from "./member/Attendance";
-import AttendanceReport from "./member/AttendaceReport";
-import AllotSeat from "./member/AllotSeat";
+import React from "react"
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
+import { createDrawerNavigator, DrawerContentScrollView } from "@react-navigation/drawer"
+import { Ionicons } from "@expo/vector-icons" // Use Expo or your preferred icon library
+import MembersDashboard from "./MemberDashbord"
+import MemberProfileCard from "./MemberProfileCard"
+import ShiftForm from "./ShiftForm"
+import AddMemberForm from "./AddMemberForm"
+import ShiftDetails from "./ShiftDetails"
+import Finance from "./Finance"
+import PricingSection from "./Pricing"
+import AddSeatsPage from "./Seat"
+import WhatsAppMessageScreen from "./WhatsappMessage"
+import AttendancePage from "./member/Attendance"
+import AttendanceReport from "./member/AttendaceReport"
+import AllotSeat from "./member/AllotSeat"
 
 type DrawerParamList = {
-  Home: undefined;
-  Profile: undefined;
-  ShiftForm: undefined;
-  AddMemberForm: undefined;
-  ShiftDetails: undefined;
-  Finance: undefined;
-  Pricing: undefined;
-  SeatManagement: undefined;
-  WhatsAppMessage: undefined;
-  Attendance: undefined;
-  AttendanceReport: undefined;
-  AllotSeat: undefined;
-};
+  Home: undefined
+  Profile: undefined
+  ShiftForm: undefined
+  AddMemberForm: undefined
+  ShiftDetails: undefined
+  Finance: undefined
+  Pricing: undefined
+  SeatManagement: undefined
+  WhatsAppMessage: undefined
+  Attendance: undefined
+  AttendanceReport: undefined
+  AllotSeat: undefined
+}
 
-const Drawer = createDrawerNavigator<DrawerParamList>();
+const Drawer = createDrawerNavigator<DrawerParamList>()
 
 const CustomDrawerContent = (props: any) => {
   return (
@@ -45,16 +42,13 @@ const CustomDrawerContent = (props: any) => {
 
       {/* Drawer Items with Dividers */}
       {props.state.routes.map((route: any, index: number) => {
-        const { options } = props.descriptors[route.key];
-        const isFocused = props.state.index === index;
+        const { options } = props.descriptors[route.key]
+        const isFocused = props.state.index === index
 
         return (
           <View key={route.key}>
             <TouchableOpacity
-              style={[
-                styles.drawerItem,
-                isFocused && styles.activeDrawerItem,
-              ]}
+              style={[styles.drawerItem, isFocused && styles.activeDrawerItem]}
               onPress={() => props.navigation.navigate(route.name)}
             >
               <Ionicons
@@ -63,25 +57,18 @@ const CustomDrawerContent = (props: any) => {
                 color={isFocused ? "#6B46C1" : "#555"}
                 style={styles.icon}
               />
-              <Text
-                style={[
-                  styles.drawerLabel,
-                  isFocused && styles.activeDrawerLabel,
-                ]}
-              >
+              <Text style={[styles.drawerLabel, isFocused && styles.activeDrawerLabel]}>
                 {options.title || route.name}
               </Text>
             </TouchableOpacity>
             {/* Add a divider after each item except the last one */}
-            {index !== props.state.routes.length - 1 && (
-              <View style={styles.divider} />
-            )}
+            {index !== props.state.routes.length - 1 && <View style={styles.divider} />}
           </View>
-        );
+        )
       })}
     </DrawerContentScrollView>
-  );
-};
+  )
+}
 
 const Sidebar = () => {
   return (
@@ -113,9 +100,7 @@ const Sidebar = () => {
         component={MembersDashboard}
         options={{
           title: "Home",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
-          ),
+          drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
         }}
       />
       <Drawer.Screen
@@ -123,9 +108,7 @@ const Sidebar = () => {
         component={MemberProfileCard}
         options={{
           title: "Profile",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
+          drawerIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
       />
       <Drawer.Screen
@@ -133,9 +116,7 @@ const Sidebar = () => {
         component={ShiftForm}
         options={{
           title: "Shift Form",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
-          ),
+          drawerIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
         }}
       />
       <Drawer.Screen
@@ -143,9 +124,7 @@ const Sidebar = () => {
         component={AddMemberForm}
         options={{
           title: "Add Member",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="person-add-outline" size={size} color={color} />
-          ),
+          drawerIcon: ({ color, size }) => <Ionicons name="person-add-outline" size={size} color={color} />,
         }}
       />
       <Drawer.Screen
@@ -153,9 +132,7 @@ const Sidebar = () => {
         component={ShiftDetails}
         options={{
           title: "Shift Details",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="document-outline" size={size} color={color} />
-          ),
+          drawerIcon: ({ color, size }) => <Ionicons name="document-outline" size={size} color={color} />,
         }}
       />
       <Drawer.Screen
@@ -163,9 +140,7 @@ const Sidebar = () => {
         component={Finance}
         options={{
           title: "Finance",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="wallet-outline" size={size} color={color} />
-          ),
+          drawerIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
         }}
       />
       <Drawer.Screen
@@ -173,20 +148,16 @@ const Sidebar = () => {
         component={PricingSection}
         options={{
           title: "Pricing",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="pricetag-outline" size={size} color={color} />
-          ),
+          drawerIcon: ({ color, size }) => <Ionicons name="pricetag-outline" size={size} color={color} />,
         }}
       />
 
       <Drawer.Screen
         name="SeatManagement"
-        component={SeatsPage}
+        component={AddSeatsPage}
         options={{
           title: "Seat Management",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="fitness-outline" size={size} color={color} />
-          ),
+          drawerIcon: ({ color, size }) => <Ionicons name="fitness-outline" size={size} color={color} />,
         }}
       />
       <Drawer.Screen
@@ -194,9 +165,7 @@ const Sidebar = () => {
         component={WhatsAppMessageScreen}
         options={{
           title: "WhatsApp Message",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="chatbox-ellipses-outline" size={size} color={color} />
-          ),
+          drawerIcon: ({ color, size }) => <Ionicons name="chatbox-ellipses-outline" size={size} color={color} />,
         }}
       />
       <Drawer.Screen
@@ -204,9 +173,7 @@ const Sidebar = () => {
         component={AttendancePage}
         options={{
           title: "Attendance",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
-          ),
+          drawerIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
         }}
       />
       <Drawer.Screen
@@ -214,9 +181,7 @@ const Sidebar = () => {
         component={AttendanceReport}
         options={{
           title: "Attendance Report",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
-          ),
+          drawerIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
         }}
       />
       <Drawer.Screen
@@ -224,14 +189,12 @@ const Sidebar = () => {
         component={AllotSeat}
         options={{
           title: "Allot Seat",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="fitness-outline" size={size} color={color} />
-          ),
+          drawerIcon: ({ color, size }) => <Ionicons name="fitness-outline" size={size} color={color} />,
         }}
       />
     </Drawer.Navigator>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   drawerHeader: {
@@ -278,6 +241,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 4,
   },
-});
+})
 
-export default Sidebar;
+export default Sidebar
+

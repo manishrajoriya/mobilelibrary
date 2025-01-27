@@ -91,7 +91,7 @@ export default function MembersDashboard() {
       value: member,
       color: "#4285F4",
       style: { backgroundColor: "#fff" },
-      onPress: () => router.push("/(tabs)/memberProfileCard"),
+      onPress: () => router.push("/memberProfileCard"),
     },
     {
       icon: "people",
@@ -99,7 +99,7 @@ export default function MembersDashboard() {
       value: liveMember,
       color: "#34A853",
       style: { backgroundColor: "#fff" },
-      onPress: () => router.push("/(tabs)/memberProfileCard"),
+      onPress: () => router.push("/memberProfileCard"),
     },
     {
       icon: "person-remove",
@@ -107,7 +107,7 @@ export default function MembersDashboard() {
       value: inactiveMember,
       color: "#EA4335",
       style: { backgroundColor: "#fff" },
-      onPress: () => router.push("/(tabs)/memberProfileCard"),
+      onPress: () => router.push("/memberProfileCard"),
     },
     {
       icon: "card",
@@ -115,7 +115,7 @@ export default function MembersDashboard() {
       value: totalAmount,
       color: "#4285F4",
       style: { backgroundColor: "#fff" },
-      onPress: () => router.push("/(tabs)/memberProfileCard"),
+      onPress: () => router.push("/memberProfileCard"),
     },
     {
       icon: "cash",
@@ -123,7 +123,7 @@ export default function MembersDashboard() {
       value: paidAmount,
       color: "#9C27B0",
       style: { backgroundColor: "#fff" },
-      onPress: () => router.push("/(tabs)/memberProfileCard"),
+      onPress: () => router.push("/memberProfileCard"),
     },
     {
       icon: "time",
@@ -131,7 +131,7 @@ export default function MembersDashboard() {
       value: dueAmount,
       color: "#FB8C00",
       style: { backgroundColor: "#fff" },
-      onPress: () => router.push("/(tabs)/memberProfileCard"),
+      onPress: () => router.push("/memberProfileCard"),
     },
     {
       icon: "trending-up",
@@ -139,7 +139,7 @@ export default function MembersDashboard() {
       value: 1200,
       color: "#34A853",
       style: { backgroundColor: "#fff" },
-      onPress: () => router.push("/(tabs)/financeScreen"),
+      onPress: () => router.push("/finance"),
     },
     {
       icon: "stats-chart",
@@ -147,7 +147,7 @@ export default function MembersDashboard() {
       value: 600,
       color: "#EA4335",
       style: { backgroundColor: "#fff" },
-      onPress: () => router.push("/(tabs)/financeScreen"),
+      onPress: () => router.push("/finance"),
     },
   ];
 
@@ -174,7 +174,7 @@ export default function MembersDashboard() {
       {/* Add Member Button */}
       <TouchableOpacity
         style={styles.addMemberButton}
-        onPress={() => router.push("/(tabs)/addMemberForm")}
+        onPress={() => router.push("/addMemberForm")}
       >
         <View style={styles.addIcon}>
           <Ionicons name="add" size={24} color="#666" />

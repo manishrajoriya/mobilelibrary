@@ -10,7 +10,11 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { AntDesign, MaterialIcons } from "@expo/vector-icons";
-import { getMemberById } from "@/firebase/functions";
+import {
+  getMemberById,
+  fetchSeatByMemberId,
+  fetchAttendanceByMemberId,
+} from "@/firebase/functions";
 
 interface MemberDetails {
   id: string;
@@ -37,6 +41,21 @@ interface DetailRowProps {
   icon?: React.ReactNode;
 }
 
+interface Attendance {
+   id: string;
+    date: string;
+    status: boolean;
+}
+
+interface Seat {
+   id: string;
+    seatId: string;
+    isAllocated: boolean;
+    allocatedTo: string;
+    memberName: string;
+    memberExpiryDate: Date;
+}
+
 const DetailRow: React.FC<DetailRowProps> = ({ label, value, icon }) => (
   <View style={styles.detailRow}>
     {icon && <View style={styles.detailIcon}>{icon}</View>}
@@ -52,12 +71,20 @@ const MemberDetails: React.FC = () => {
   const [member, setMember] = useState<MemberDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAttendance, setShowAttendance] = useState(false);
+  const [attendanceData, setAttendanceData] = useState<Attendance[]>([]);
+  const [seat, setSeat] = useState<Seat | null>(null);
 
   const fetchMemberData = async () => {
     try {
       if (memberId) {
         const fetchedMember = await getMemberById({ id: memberId });
         setMember(fetchedMember);
+
+        const fetchedAttendance = await fetchAttendanceByMemberId(memberId);
+        setAttendanceData(fetchedAttendance);
+
+        const fetchedSeat = await fetchSeatByMemberId(memberId);
+        setSeat(fetchedSeat[0]);
       }
     } catch (error) {
       console.error("Error fetching member data:", error);
@@ -90,10 +117,7 @@ const MemberDetails: React.FC = () => {
     <ScrollView style={styles.container}>
       {/* Gradient Header */}
       <View style={styles.header}>
-        <Image
-          source={{ uri: member.profileImage }}
-          style={styles.avatar}
-        />
+        <Image source={{ uri: member.profileImage }} style={styles.avatar} />
         <View style={styles.profileInfo}>
           <Text style={styles.label}>Name</Text>
           <Text style={styles.headerValue}>{member.fullName}</Text>
@@ -116,46 +140,24 @@ const MemberDetails: React.FC = () => {
           value={member.addmissionDate.toDateString()}
           icon={<MaterialIcons name="event" size={16} color="#6B46C1" />}
         />
-       {/* <DetailRow
-          label="Date Of Birth"
-          value="NA"
-          icon={<MaterialIcons name="cake" size={16} color="#6B46C1" />}
-        /> */}
         <DetailRow
           label="Email"
           value={member.email}
           icon={<MaterialIcons name="email" size={16} color="#6B46C1" />}
         />
-        {/* <DetailRow
-          label="Gender"
-          value="Male"
-          icon={<MaterialIcons name="wc" size={16} color="#6B46C1" />}
-        /> */}
-        {/* <DetailRow
-          label="Company:"
-          value="NA"
-          icon={<MaterialIcons name="business" size={16} color="#6B46C1" />}
-        /> */}
-        {/* <DetailRow
-          label="Marriage Anniversary"
-          value="NA"
-          icon={<MaterialIcons name="favorite" size={16} color="#6B46C1" />}
-        /> */}
-        {/* <DetailRow
-          label="Home Phone"
-          value="NA"
-          icon={<MaterialIcons name="phone" size={16} color="#6B46C1" />}
-        /> */}
-        {/* <DetailRow
-          label="Care of (c/o)"
-          value="NA"
-          icon={<MaterialIcons name="person-outline" size={16} color="#6B46C1" />}
-        />
-        <DetailRow
-          label="Remark"
-          value="NA"
-          icon={<MaterialIcons name="comment" size={16} color="#6B46C1" />}
-        /> */}
+        {seat ? (
+          <DetailRow
+            label="Seat Number"
+            value={seat.seatId}
+            icon={<MaterialIcons name="chair" size={16} color="#6B46C1" />}
+          />
+        ) : (
+          <DetailRow
+            label="Seat Number"
+            value="N/A"
+            icon={<MaterialIcons name="chair" size={16} color="#6B46C1" />}
+          />
+        )}
       </View>
 
       {/* Attendance Report */}
@@ -171,21 +173,37 @@ const MemberDetails: React.FC = () => {
             color="#6B46C1"
           />
         </View>
+        {showAttendance && (
+          <View style={styles.attendanceContainer}>
+            {attendanceData.length > 0 ? (
+              attendanceData.map((attendance) => (
+                <View key={attendance.id} style={styles.attendanceRow}>
+                  <Text style={styles.attendanceDate}>
+                    {attendance.date}
+                  </Text>
+                  <Text style={styles.attendanceStatus}>
+                    {attendance.status ? "Present" : "Absent"}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noDataText}>No attendance records found</Text>
+            )}
+          </View>
+        )}
       </TouchableOpacity>
 
       {/* Documents Section */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Documents:</Text>
-        {
-          member.document ? (
-            <Image
-              source={{ uri: member.document }}
-              style={styles.documentImage}
-            />
-          ) : (
-            <Text style={styles.noDataText}>:( Nothing Found</Text>
-          )
-        }
+        {member.document ? (
+          <Image
+            source={{ uri: member.document }}
+            style={styles.documentImage}
+          />
+        ) : (
+          <Text style={styles.noDataText}>:( Nothing Found</Text>
+        )}
       </View>
 
       {/* Action Buttons */}
@@ -328,6 +346,25 @@ const styles = StyleSheet.create({
   reportTitle: {
     color: "#6B46C1",
     fontSize: 16,
+    fontWeight: "500",
+  },
+  attendanceContainer: {
+    marginTop: 10,
+  },
+  attendanceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  attendanceDate: {
+    color: "#666",
+    fontSize: 14,
+  },
+  attendanceStatus: {
+    color: "#333",
+    fontSize: 14,
     fontWeight: "500",
   },
   sectionTitle: {

@@ -7,7 +7,7 @@ import { collection, addDoc,getDoc, where, query, getDocs, startAfter,
   updateDoc,
   doc,
   deleteDoc,
-  serverTimestamp} from "firebase/firestore"; 
+  } from "firebase/firestore"; 
 
 import {getAuth, } from "firebase/auth"
 import { db } from "@/utils/firebaseConfig";
@@ -50,7 +50,6 @@ export async function createPlan({ data }: { data: PlanData }) {
   }
 }
 
-
 export async function getPlans() {
   try {
     const currentUser = getAuth().currentUser;
@@ -62,7 +61,7 @@ export async function getPlans() {
     const plansSnapshot = await getDocs(q);
     
     const plans = plansSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name, description: doc.data().description, duration: doc.data().duration, amount: doc.data().amount  }));
-    console.log('Plans fetched successfully:', plans);
+    // console.log('Plans fetched successfully:', plans);
     
     return plans;
   } catch (error: any) {
@@ -257,6 +256,7 @@ export async function getMembers(pageSize: number = 5, lastVisible?: QueryDocume
     throw error;
   }
 }
+
 export async function getExpiredMembers(pageSize: number = 5, lastVisible?: QueryDocumentSnapshot<DocumentData>) {
   try {
     const currentUser = getAuth().currentUser;
@@ -313,6 +313,7 @@ export async function getExpiredMembers(pageSize: number = 5, lastVisible?: Quer
     throw error;
   }
 }
+
 export async function getLiveMembers(pageSize: number = 5, lastVisible?: QueryDocumentSnapshot<DocumentData>) {
   try {
     const currentUser = getAuth().currentUser;
@@ -409,7 +410,6 @@ export async function deleteMember({ id }: { id: string }) {
   }
 }
 
-
 export async function getMemberById({ id }: { id: string }) {
   try {
     const memberRef = doc(db, 'members', id)
@@ -442,7 +442,6 @@ export async function getMemberById({ id }: { id: string }) {
     throw error
   }
 }
-
 
 export async function totalMemberCount() {
   try {
@@ -526,7 +525,6 @@ export async function paidAmountCount() {
   }
 }
 
-
 export async function totalAmountCount() {
   try {
     const currentUser = getAuth().currentUser
@@ -562,7 +560,6 @@ export async function dueAmountCount() {
     throw error
   }
 }
-
 
 export const saveAttendance = async (attendanceData: {
   date: string;
@@ -666,11 +663,18 @@ export const addSeats = async (numberOfSeats: number) => {
       throw new Error("User not authenticated. Redirecting to sign-in...")
     }
     const seatCollection = collection(db, "seats");
+    
+    // Get the current number of seats
+    const seatsSnapshot = await getDocs(seatCollection);
+    const currentSeatCount = seatsSnapshot.size;
+
     for (let i = 0; i < numberOfSeats; i++) {
       await addDoc(seatCollection, {
-        seatId: `seat-${i + 1}`,
+        seatId: `seat-${currentSeatCount + i + 1}`,
         isAllocated: false,
         allocatedTo: null,
+        memberName: null,  
+        memberExpiryDate: null,
       });
     }
   
@@ -681,7 +685,7 @@ export const addSeats = async (numberOfSeats: number) => {
   }
 }
 
-export const allotSeat = async (seatId: string, memberId: string) => {
+export const allotSeat = async (seatId: string, memberId: string, memberName: string, expiryDate: Date) => {
   try {
     const currentUser = getAuth().currentUser
     if (!currentUser) {
@@ -699,6 +703,8 @@ export const allotSeat = async (seatId: string, memberId: string) => {
     await updateDoc(seatDoc, {
       isAllocated: true,
       allocatedTo: memberId,
+      memberName: memberName,
+      memberExpiryDate: expiryDate,
     });
     return `Seat ${seatId} is allocated to member ${memberId}`;
   } catch (error) {
@@ -709,13 +715,15 @@ export const allotSeat = async (seatId: string, memberId: string) => {
 
 export const fetchSeats = async () => {
   try {
-    const q = query(collection(db, "seats"), );
+    const q = query(collection(db, "seats"), orderBy("seatId", "asc"),);
     const seatCollection = await getDocs(q);
     const seats = seatCollection.docs.map(doc => ({
       id: doc.id,
       seatId: doc.data().seatId,
       isAllocated: doc.data().isAllocated,
-      allocatedTo: doc.data().allocatedTo
+      allocatedTo: doc.data().allocatedTo,
+      memberName: doc.data().memberName,
+      memberExpiryDate: doc.data().memberExpiryDate
     }));
     return seats;
   } catch (error) {
@@ -723,3 +731,95 @@ export const fetchSeats = async () => {
     throw error;
   }
 }
+
+export const deallocateSeat = async (seatId: string) => {
+  try {
+    const currentUser = getAuth().currentUser
+    if (!currentUser) {
+      throw new Error("User not authenticated. Redirecting to sign-in...")
+    }
+    const seatCollection = collection(db, "seats");
+    const seatDoc = doc(seatCollection, seatId);
+    const seatData = await getDoc(seatDoc);
+    if (!seatData.exists()) {
+      throw new Error("Seat not found");
+    }
+    if (!seatData.data().isAllocated) {
+      throw new Error("Seat is not allocated");
+    }
+    await updateDoc(seatDoc, {
+      isAllocated: false,
+      allocatedTo: null,
+    });
+    return `Seat ${seatId} is deallocated`;
+  } catch (error) {
+    console.error("Error deallocating seat:", error);
+    throw error;
+  }
+}
+
+export const fetchSeatByMemberId = async (memberId: string) => {
+  try {
+    const q = query(collection(db, "seats"), where("allocatedTo", "==", memberId));
+    const seatCollection = await getDocs(q);
+    const seats = seatCollection.docs.map(doc => ({
+      id: doc.id,
+      seatId: doc.data().seatId,
+      isAllocated: doc.data().isAllocated,
+      allocatedTo: doc.data().allocatedTo,
+      memberName: doc.data().memberName,
+      memberExpiryDate: doc.data().memberExpiryDate
+    }));
+    return seats;
+  } catch (error) {
+    console.error("Error fetching seats by member ID:", error);
+    throw error;
+  }
+}
+
+export const fetchAttendanceByMemberId = async (memberId: string) => {
+  try {
+    const currentUser = getAuth().currentUser;
+    if (!currentUser) {
+      throw new Error("User not authenticated. Redirecting to sign-in...");
+    }
+
+    const attendanceCollection = collection(db, "attendance");
+
+    // Query attendance records for the current admin
+    const q = query(
+      attendanceCollection,
+      where("admin", "==", currentUser.uid),
+      orderBy("date", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+
+    // Filter attendance records to find entries for the specified member
+    const attendanceRecords: {
+      id: string;
+      date: string;
+      status: boolean;
+    }[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const attendanceData = doc.data();
+      const memberAttendance = attendanceData.members.find(
+        (member: { id: string }) => member.id === memberId
+      );
+
+      if (memberAttendance) {
+        attendanceRecords.push({
+          id: doc.id,
+          date: attendanceData.date,
+          status: memberAttendance.isPresent,
+        });
+      }
+    });
+
+    // console.log("Attendance records fetched for member:", memberId);
+    return attendanceRecords;
+  } catch (error) {
+    console.error("Error fetching attendance by member ID:", error);
+    throw error;
+  }
+};
