@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons" // Use Expo or your preferred icon
 import MembersDashboard from "./MemberDashbord"
 import MemberProfileCard from "./MemberProfileCard"
 import ShiftForm from "./ShiftForm"
-import AddMemberForm from "./AddMemberForm"
+import AddMemberForm from "./member/AddMemberForm"
 import ShiftDetails from "./ShiftDetails"
 import Finance from "./Finance"
 import PricingSection from "./Pricing"
