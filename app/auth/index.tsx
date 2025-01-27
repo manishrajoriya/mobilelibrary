@@ -1,11 +1,13 @@
 import { View, Text } from 'react-native'
 import React from 'react'
-import AuthEmail from '@/component/AuthScreen'
+import  LoginScreen  from '@/component/AuthScreen'
+import { useRouter } from 'expo-router'
 
 const index = () => {
+  const router = useRouter()
   return (
     <>
-      <AuthEmail />
+      <LoginScreen />
     </>
   )
 }

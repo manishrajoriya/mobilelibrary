@@ -1,7 +1,7 @@
 import type React from "react"
 import { createContext, useState, useEffect, useContext } from "react"
 import type { User } from "firebase/auth"
-import { auth } from "@/functions/src/firebaseConfig"
+import { auth } from "@/utils/firebaseConfig"
 
 interface AuthContextType {
   user: User | null

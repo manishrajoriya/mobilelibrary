@@ -1,178 +1,60 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Button,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  TouchableOpacity,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { auth } from "../utils/firebaseConfig"; // Import the Firebase auth instance
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-} from "firebase/auth";
+import type React from "react"
+import { useState } from "react"
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native"
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, type AuthError } from "firebase/auth"
+import { auth } from "@/utils/firebaseConfig"
+import { useRouter } from "expo-router"
 
-// Custom hook for Firebase auth logic
-const useAuth = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+const LoginScreen: React.FC = () => {
+  const [email, setEmail] = useState<string>("")
+  const [password, setPassword] = useState<string>("")
+  const [isLogin, setIsLogin] = useState<boolean>(true)
+  const router = useRouter()
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        router.replace("/(tabs)");
+  const handleAuth = async (): Promise<void> => {
+    try {
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, email, password)
+        router.push("/(tabs)")
+        Alert.alert("Success", "Logged in successfully")
       } else {
-        setIsLoading(false);
+        await createUserWithEmailAndPassword(auth, email, password)
+        router.push("/(tabs)")
+        Alert.alert("Success", "Account created successfully")
       }
-    });
-
-    return unsubscribe;
-  }, [router]);
-
-  const handleRegister = async (email: string, password: string) => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      Alert.alert("Success", `User registered: ${userCredential.user.email}`);
-    } catch (error: any) {
-      Alert.alert("Error", getFriendlyErrorMessage(error.code));
+    } catch (error) {
+      const authError = error as AuthError
+      Alert.alert("Error", authError.message)
     }
-  };
-
-  const handleLogin = async (email: string, password: string) => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      Alert.alert("Success", `User logged in: ${userCredential.user.email}`);
-      router.push("/(tabs)");
-    } catch (error: any) {
-      Alert.alert("Error", getFriendlyErrorMessage(error.code));
-    }
-  };
-
-  const getFriendlyErrorMessage = (errorCode: string): string => {
-    switch (errorCode) {
-      case "auth/invalid-email":
-        return "Please enter a valid email address.";
-      case "auth/weak-password":
-        return "Password should be at least 6 characters.";
-      case "auth/email-already-in-use":
-        return "This email is already in use.";
-      case "auth/user-not-found":
-        return "No user found with this email.";
-      case "auth/wrong-password":
-        return "Incorrect password.";
-      default:
-        return "An error occurred. Please try again.";
-    }
-  };
-
-  return { isLoading, handleRegister, handleLogin };
-};
-
-const AuthForm: React.FC<{
-  email: string;
-  password: string;
-  isRegistering: boolean;
-  onEmailChange: (text: string) => void;
-  onPasswordChange: (text: string) => void;
-  onSubmit: () => void;
-  isSubmitting: boolean;
-}> = ({ email, password, isRegistering, onEmailChange, onPasswordChange, onSubmit, isSubmitting }) => (
-  <View style={styles.formContainer}>
-    <TextInput
-      style={styles.input}
-      placeholder="Email"
-      keyboardType="email-address"
-      autoCapitalize="none"
-      value={email}
-      onChangeText={onEmailChange}
-      accessibilityLabel="Email input"
-    />
-
-    <TextInput
-      style={styles.input}
-      placeholder="Password"
-      secureTextEntry
-      value={password}
-      onChangeText={onPasswordChange}
-      accessibilityLabel="Password input"
-    />
-
-    <Button
-      title={isRegistering ? "Register" : "Login"}
-      onPress={onSubmit}
-      disabled={isSubmitting || !email || !password}
-      accessibilityLabel={isRegistering ? "Register button" : "Login button"}
-    />
-  </View>
-);
-
-const AuthToggle: React.FC<{
-  isRegistering: boolean;
-  onToggle: () => void;
-}> = ({ isRegistering, onToggle }) => (
-  <TouchableOpacity onPress={onToggle} style={styles.toggleContainer}>
-    <Text style={styles.toggleText}>
-      {isRegistering
-        ? "Already have an account? Login"
-        : "Don't have an account? Register"}
-    </Text>
-  </TouchableOpacity>
-);
-
-const AuthEmail: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { isLoading, handleRegister, handleLogin } = useAuth();
-
-  const handleAuth = async () => {
-    setIsSubmitting(true);
-    if (isRegistering) {
-      await handleRegister(email, password);
-    } else {
-      await handleLogin(email, password);
-    }
-    setIsSubmitting(false);
-  };
-
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#007BFF" />
-      </View>
-    );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{isRegistering ? "Register" : "Login"}</Text>
-
-      <AuthForm
-        email={email}
-        password={password}
-        isRegistering={isRegistering}
-        onEmailChange={setEmail}
-        onPasswordChange={setPassword}
-        onSubmit={handleAuth}
-        isSubmitting={isSubmitting}
+      <Text style={styles.title}>{isLogin ? "Login" : "Sign Up"}</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
       />
-
-      <AuthToggle
-        isRegistering={isRegistering}
-        onToggle={() => setIsRegistering(!isRegistering)}
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
       />
+      <TouchableOpacity style={styles.button} onPress={handleAuth}>
+        <Text style={styles.buttonText}>{isLogin ? "Login" : "Sign Up"}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
+        <Text style={styles.switchText}>{isLogin ? "Need an account? Sign Up" : "Already have an account? Login"}</Text>
+      </TouchableOpacity>
     </View>
-  );
-};
-
-export default AuthEmail;
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -182,28 +64,39 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#f5f5f5",
   },
-  formContainer: {
-    width: "100%",
-  },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
     marginBottom: 20,
+    fontWeight: "bold",
   },
   input: {
     width: "100%",
-    padding: 15,
+    height: 40,
+    borderColor: "gray",
     borderWidth: 1,
-    borderColor: "#ccc",
+    marginBottom: 10,
+    paddingHorizontal: 10,
     borderRadius: 5,
-    marginBottom: 15,
-    backgroundColor: "#fff",
+    backgroundColor: "white",
   },
-  toggleContainer: {
-    marginTop: 15,
+  button: {
+    backgroundColor: "#007AFF",
+    padding: 10,
+    borderRadius: 5,
+    width: "100%",
+    alignItems: "center",
+    marginTop: 10,
   },
-  toggleText: {
-    color: "#007BFF",
-    textDecorationLine: "underline",
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
   },
-});
+  switchText: {
+    marginTop: 20,
+    color: "#007AFF",
+  },
+})
+
+export default LoginScreen
+
