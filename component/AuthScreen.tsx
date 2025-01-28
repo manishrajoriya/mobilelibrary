@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, type AuthError } from "firebase/auth"
 import { auth } from "@/utils/firebaseConfig"
@@ -10,6 +10,15 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("")
   const [isLogin, setIsLogin] = useState(true)
   const router = useRouter()
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        router.push("/(tabs)")
+      }
+    })
+    return () => unsubscribe()
+  }, [auth])
 
   const validateForm = (): boolean => {
     if (!email || !password) {

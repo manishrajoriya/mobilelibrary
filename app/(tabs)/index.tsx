@@ -8,9 +8,9 @@ import Sidebar from '@/component/Sidebar';
 const Index = () => {
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    
       <Sidebar />
-    </GestureHandlerRootView>
+    
   );
 }
 
