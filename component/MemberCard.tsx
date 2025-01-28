@@ -57,7 +57,7 @@ const MemberCard: React.FC<{ member: MemberDetails, onPress: () => void }> = Rea
                 {member.status}
               </Text>
             </View>
-            <Text style={styles.seatText}>Seat: {member.seatNumber}</Text>
+            {/* <Text style={styles.seatText}>Seat: {member.seatNumber}</Text> */}
           </View>
         </View>
 
@@ -82,12 +82,12 @@ const MemberCard: React.FC<{ member: MemberDetails, onPress: () => void }> = Rea
           ].map(({ label, value, style }) => (
             <View key={`amount-${label}`} style={styles.amountItem}>
               <Text style={styles.amountLabel}>{label}</Text>
-              <Text style={style}>${value}</Text>
+              <Text style={style}>₹{value}</Text>
             </View>
           ))}
         </View>
 
-        <ActionButtons />
+        {/* <ActionButtons /> */}
       </TouchableOpacity>
     )
   },
