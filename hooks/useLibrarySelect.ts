@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { getLibraries } from "@/firebase/functions"
 import useStore from "@/hooks/store"
+import { useRouter } from "expo-router"
 
 export interface Library {
   id: string
@@ -15,6 +16,7 @@ export function useLibrarySelection() {
   const currentUser = useStore((state: any) => state.currentUser)
   const activeLibrary = useStore((state: any) => state.activeLibrary)
   const setActiveLibrary = useStore((state: any) => state.setActiveLibrary)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchLibraries = async () => {
@@ -44,6 +46,7 @@ export function useLibrarySelection() {
     if (selected) {
       setActiveLibrary(selected)
     }
+    router.replace("/")
   }
 
   return {

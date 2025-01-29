@@ -53,7 +53,7 @@ export default function AllPlans() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deletePlan({ id })
+      await deletePlan({ id, })
       setPlans(plans.filter((plan) => plan.id !== id))
     } catch (err) {
       setError("Failed to delete plan. Please try again.")
@@ -63,7 +63,7 @@ export default function AllPlans() {
   const handleUpdate = async () => {
     if (editingPlan) {
       try {
-        await updatePlan({ id: editingPlan.id, data: editingPlan, currentUser })
+        await updatePlan({ id: editingPlan.id, data: editingPlan, currentUser,  })
         setPlans(plans.map((plan) => (plan.id === editingPlan.id ? editingPlan : plan)))
         setIsModalVisible(false)
         setEditingPlan(null)

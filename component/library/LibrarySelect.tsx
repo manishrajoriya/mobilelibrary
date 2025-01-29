@@ -24,8 +24,8 @@ const LibrarySelectionScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   dropdownContainer: {
-    width: 150,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    width: 40,
+    backgroundColor: "transparent",
     borderRadius: 8,
     overflow: "hidden",
   },
