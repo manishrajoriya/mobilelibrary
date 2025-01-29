@@ -14,6 +14,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons"
 import { fetchSeats, allotSeat, deallocateSeat } from "@/firebase/functions"
 import { getMembers } from "@/firebase/functions"
+import useStore from "@/hooks/store"
 
 interface Member {
   id: string
@@ -44,6 +45,9 @@ const AllocateSeatsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [selectedSeatData, setSelectedSeatData] = useState<Seat | null>(null)
 
+  const currentUser = useStore((state: any) => state.currentUser);
+  const activeLibrary = useStore((state: any) => state.activeLibrary);
+
   useEffect(() => {
     loadSeats()
     loadMembers()
@@ -63,7 +67,7 @@ const AllocateSeatsPage: React.FC = () => {
   const loadSeats = async () => {
     setLoading(true)
     try {
-      const fetchedSeats = await fetchSeats()
+      const fetchedSeats = await fetchSeats({ currentUser: currentUser, libraryId: activeLibrary.id })
       setSeats(fetchedSeats)
     } catch (error) {
       console.error("Error fetching seats:", error)
@@ -81,7 +85,7 @@ const AllocateSeatsPage: React.FC = () => {
         members: fetchedMembers,
         lastVisibleDoc: newLastVisibleDoc,
         hasMore,
-      } = await getMembers(10, lastVisibleDoc)
+      } = await getMembers({ pageSize: 10, lastVisible: lastVisibleDoc, currentUser: currentUser, libraryId: activeLibrary.id })
 
       setMembers((prevMembers) => {
         const newMembers = fetchedMembers.filter(

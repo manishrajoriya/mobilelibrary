@@ -14,6 +14,7 @@ import type { MemberDetails } from "@/types/MemberProfile";
 import MemberCard from "./MemberCard";
 import { useRouter } from "expo-router";
 import { DocumentData, QueryDocumentSnapshot } from "@firebase/firestore";
+import useStore from "@/hooks/store";
 
 const MemberProfileCards: React.FC = () => {
   const [members, setMembers] = useState<MemberDetails[]>([]);
@@ -29,6 +30,9 @@ const MemberProfileCards: React.FC = () => {
   const [expiringSoonCount, setExpiringSoonCount] = useState(0); // Expiring soon count
   const router = useRouter();
 
+  const currentUser = useStore((state: any) => state.currentUser);
+  const activeLibrary = useStore((state: any) => state.activeLibrary);
+
   // Helper function to calculate days difference
   const getDaysDifference = (expiryDate: Date): number => {
     const today = new Date();
@@ -42,9 +46,9 @@ const MemberProfileCards: React.FC = () => {
     setIsLoading(true);
     try {
       // Fetch total counts
-      const total = await totalMemberCount();
-      const live = await liveMemberCount();
-      const expired = await InactiveMemberCount();
+      const total = await totalMemberCount({ currentUser, libraryId: activeLibrary.id });
+      const live = await liveMemberCount({ currentUser, libraryId: activeLibrary.id });
+      const expired = await InactiveMemberCount({ currentUser, libraryId: activeLibrary.id });
       const expiringSoon = await calculateExpiringSoonCount();
 
       setTotalMembers(total);
@@ -53,7 +57,7 @@ const MemberProfileCards: React.FC = () => {
       setExpiringSoonCount(expiringSoon);
 
       // Fetch initial members
-      const { members: newMembers, lastVisibleDoc, hasMore: more } = await getMembers();
+      const { members: newMembers, lastVisibleDoc, hasMore: more } = await getMembers({pageSize: 10, lastVisible, currentUser, libraryId: activeLibrary.id});
       setMembers(newMembers);
       setFilteredMembers(newMembers);
       setLastVisible(lastVisibleDoc);
@@ -68,7 +72,7 @@ const MemberProfileCards: React.FC = () => {
   // Calculate expiring soon count
   const calculateExpiringSoonCount = async (): Promise<number> => {
     // Fetch all members (or use a Firestore query to count expiring soon members directly)
-    const { members: allMembers } = await getMembers();
+    const { members: allMembers } = await getMembers({pageSize: 10, lastVisible, currentUser, libraryId: activeLibrary.id});
     return allMembers.filter((member) => {
       const expiryDate = new Date(member.expiryDate);
       const daysDiff = getDaysDifference(expiryDate);
@@ -81,7 +85,7 @@ const MemberProfileCards: React.FC = () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
-      const { members: newMembers, lastVisibleDoc, hasMore: more } = await getMembers(5, lastVisible);
+      const { members: newMembers, lastVisibleDoc, hasMore: more } = await getMembers({pageSize: 10, lastVisible, currentUser, libraryId: activeLibrary.id});
       setMembers((prev) => [...prev, ...newMembers]);
       setFilteredMembers((prev) => [...prev, ...newMembers]);
       setLastVisible(lastVisibleDoc);

@@ -1,13 +1,6 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState, useCallback } from "react"
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
 import {
   totalMemberCount,
   liveMemberCount,
@@ -15,8 +8,11 @@ import {
   paidAmountCount,
   totalAmountCount,
   dueAmountCount,
-} from "@/firebase/functions";
-import { useRouter } from "expo-router";
+} from "@/firebase/functions"
+import { useRouter } from "expo-router"
+import useStore from "@/hooks/store"
+import LibrarySelectionScreen from "./library/LibrarySelect"
+import { useLibrarySelection } from "@/hooks/useLibrarySelect"
 
 
 const StatCard = ({
@@ -27,12 +23,12 @@ const StatCard = ({
   style,
   onPress,
 }: {
-  icon: any;
-  title: string;
-  value: number;
-  color: string;
-  style: any;
-  onPress: () => void;
+  icon: any
+  title: string
+  value: number
+  color: string
+  style: any
+  onPress: () => void
 }) => (
   <TouchableOpacity onPress={onPress} style={[styles.card, style]}>
     <View style={[styles.iconContainer, { backgroundColor: `${color}10` }]}>
@@ -41,48 +37,56 @@ const StatCard = ({
     <Text style={styles.cardTitle}>{title}</Text>
     <Text style={styles.cardValue}>{value}</Text>
   </TouchableOpacity>
-);
+)
 
 export default function MembersDashboard() {
-  const [member, setMember] = useState<number>(0);
-  const [liveMember, setLiveMember] = useState<number>(0);
-  const [inactiveMember, setInactiveMember] = useState<number>(0);
-  const [paidAmount, setPaidAmount] = useState<number>(0);
-  const [totalAmount, setTotalAmount] = useState<number>(0);
-  const [dueAmount, setDueAmount] = useState<number>(0);
-  const [refreshing, setRefreshing] = useState(false);
+  const [member, setMember] = useState<number>(0)
+  const [liveMember, setLiveMember] = useState<number>(0)
+  const [inactiveMember, setInactiveMember] = useState<number>(0)
+  const [paidAmount, setPaidAmount] = useState<number>(0)
+  const [totalAmount, setTotalAmount] = useState<number>(0)
+  const [dueAmount, setDueAmount] = useState<number>(0)
+  const [refreshing, setRefreshing] = useState(false)
 
-  const router = useRouter();
+  const router = useRouter()
 
-  const fetchStats = async () => {
+  const currentUser = useStore((state: any) => state.currentUser)
+  
+  const { activeLibrary } = useLibrarySelection()
+
+  const fetchStats = useCallback(async () => {
+    if (!activeLibrary) return
+
     try {
-      const total = await totalMemberCount();
-      const live = await liveMemberCount();
-      const inactive = await InactiveMemberCount();
-      const paidAmount = await paidAmountCount();
-      const totalAmount = await totalAmountCount();
-      const dueAmount = await dueAmountCount();
+      const total = await totalMemberCount({ currentUser, libraryId: activeLibrary.id })
+      const live = await liveMemberCount({ currentUser, libraryId: activeLibrary.id })
+      const inactive = await InactiveMemberCount({ currentUser, libraryId: activeLibrary.id })
+      const paidAmount = await paidAmountCount({ currentUser, libraryId: activeLibrary.id })
+      const totalAmount = await totalAmountCount({ currentUser, libraryId: activeLibrary.id })
+      const dueAmount = await dueAmountCount({ currentUser, libraryId: activeLibrary.id })
 
-      setMember(total);
-      setLiveMember(live);
-      setInactiveMember(inactive);
-      setPaidAmount(paidAmount);
-      setTotalAmount(totalAmount);
-      setDueAmount(dueAmount);
+      setMember(total)
+      setLiveMember(live)
+      setInactiveMember(inactive)
+      setPaidAmount(paidAmount)
+      setTotalAmount(totalAmount)
+      setDueAmount(dueAmount)
     } catch (error) {
-      console.error("Error fetching stats:", error);
+      console.error("Error fetching stats:", error)
     }
-  };
+  }, [currentUser, activeLibrary])
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    if (activeLibrary) {
+      fetchStats()
+    }
+  }, [activeLibrary, fetchStats])
 
   const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchStats();
-    setRefreshing(false);
-  };
+    setRefreshing(true)
+    await fetchStats()
+    setRefreshing(false)
+  }
 
   const stats = [
     {
@@ -149,14 +153,12 @@ export default function MembersDashboard() {
       style: { backgroundColor: "#fff" },
       onPress: () => router.push("/finance"),
     },
-  ];
+  ]
 
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {/* Gradient Header */}
       <View style={styles.header}>
@@ -164,18 +166,13 @@ export default function MembersDashboard() {
           <View style={styles.avatar}>
             <Ionicons name="desktop-outline" size={24} color="#34A853" />
           </View>
-          <Text style={styles.profileName}>Manish Rajoriya</Text>
+          <Text style={styles.profileName}>{activeLibrary ? activeLibrary.name : "Loading..."}</Text>
         </View>
-        <TouchableOpacity>
-          <Ionicons name="chevron-down" size={24} color="#fff" />
-        </TouchableOpacity>
+        <LibrarySelectionScreen />
       </View>
 
       {/* Add Member Button */}
-      <TouchableOpacity
-        style={styles.addMemberButton}
-        onPress={() => router.push("/addMemberForm")}
-      >
+      <TouchableOpacity style={styles.addMemberButton} onPress={() => router.push("/addMemberForm")}>
         <View style={styles.addIcon}>
           <Ionicons name="add" size={24} color="#666" />
         </View>
@@ -189,7 +186,7 @@ export default function MembersDashboard() {
         ))}
       </View>
     </ScrollView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -293,4 +290,5 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
   },
-});
+})
+

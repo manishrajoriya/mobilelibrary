@@ -19,6 +19,7 @@ import { useAddMemberForm } from "@/hooks/useAddMemberForm";
 
 import { pickImage, uploadImageToFirebase, pickImageSource } from "./ImageUpload";
 import type { FormData } from "@/types/MemberProfile";
+import useStore from "@/hooks/store";
 
 export const formatDate = (date: Date) => {
   return date.toLocaleDateString("en-GB", {
@@ -42,12 +43,14 @@ export default function AddMemberForm() {
     setIsLoading,
     plans,
   } = useAddMemberForm();
+  const currentUser = useStore((state: any) => state.currentUser);
+  const activeLibrary = useStore((state: any) => state.activeLibrary);
 
   const statusOptions = ["Live", "Pending", "Expired"];
 
   const onSubmit = async (data: FormData) => {
     try {
-      await addMember({ data });
+      await addMember({ data, currentUser, libraryId: activeLibrary.id });
       Toast.show({
         type: "success",
         text1: "Member added successfully",

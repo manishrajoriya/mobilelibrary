@@ -11,6 +11,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { MaterialIcons } from "@expo/vector-icons"; // For icons
 import { getAttendanceByDate } from "@/firebase/functions"; // Import your function here
+import useStore from "@/hooks/store";
 
 interface Member {
   id: string;
@@ -31,11 +32,14 @@ const AttendanceScreen: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
 
+  const currentUser = useStore((state: any) => state.currentUser);
+  const activeLibrary = useStore((state: any) => state.activeLibrary);
+
   const fetchAttendance = async (date: string) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAttendanceByDate(date);
+      const data = await getAttendanceByDate({ date, currentUser, libraryId: activeLibrary.id });
       setAttendanceData(data);
     } catch (err) {
       setError("Failed to fetch attendance data. Please try again.");

@@ -16,7 +16,6 @@
     "preset": "jest-expo"
   },
   "dependencies": {
-    "@expo-google-fonts/poppins": "^0.2.3",
     "@expo/vector-icons": "^14.0.2",
     "@firebase/firestore": "^4.7.6",
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
@@ -31,7 +30,6 @@
     "expo-auth-session": "~6.0.2",
     "expo-blur": "~14.0.2",
     "expo-constants": "~17.0.4",
-    "expo-firebase-recaptcha": "^2.3.1",
     "expo-font": "~13.0.3",
     "expo-haptics": "~14.0.1",
     "expo-image-picker": "~16.0.4",

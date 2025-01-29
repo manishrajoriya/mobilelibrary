@@ -14,6 +14,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage"; // For local storage
 import { getMembers, saveAttendance } from "@/firebase/functions"; // Import Firebase functions
 import type { MemberDetails } from "@/types/MemberProfile"; // Replace with your member type
+import useStore from "@/hooks/store";
 
 const AttendancePage: React.FC = () => {
   const [members, setMembers] = useState<MemberDetails[]>([]);
@@ -25,11 +26,14 @@ const AttendancePage: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<"all" | "present" | "absent">("all");
   const [attendanceStatus, setAttendanceStatus] = useState<Record<string, boolean>>({});
 
+ 
+  const currentUser = useStore((state: any) => state.currentUser);
+  const activeLibrary = useStore((state: any) => state.activeLibrary);
   // Fetch members from Firebase
   const fetchMembers = async () => {
     setIsLoading(true);
     try {
-      const { members: fetchedMembers } = await getMembers();
+      const { members: fetchedMembers } = await getMembers({libraryId: activeLibrary.id, currentUser, pageSize: 10, lastVisible: undefined});
       setMembers(fetchedMembers);
       setFilteredMembers(fetchedMembers);
 
@@ -122,7 +126,7 @@ const AttendancePage: React.FC = () => {
     };
 
     try {
-      await saveAttendance(attendanceData);
+      await saveAttendance({ currentUser, attendanceData, libraryId: activeLibrary.id });
       Alert.alert("Success", "Attendance saved successfully!");
     } catch (error) {
       console.error("Error saving attendance:", error);

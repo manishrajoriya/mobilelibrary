@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { createPlan } from '@/firebase/functions';
 import Toast from 'react-native-toast-message';
+import useStore from '@/hooks/store';
 
 interface FormData {
   name: string;
@@ -25,8 +26,11 @@ export default function ShiftForm() {
     amount: '',
   });
 
+  const currentUser = useStore((state: any) => state.currentUser);
+  const activeLibrary = useStore((state: any) => state.activeLibrary);
+
   const handleSubmit = async () => {
-    await createPlan({ data: formData });
+    await createPlan({ data: formData, currentUser, libraryId: activeLibrary.id });
     Toast.show({
       type: 'success',
       text1: 'Plan created successfully',

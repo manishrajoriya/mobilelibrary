@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Modal, TextInput } from "react-native"
 import { getPlans, updatePlan, deletePlan } from "@/firebase/functions"
+import useStore from "@/hooks/store"
 
 type PlanDetailsProps = {
   id: string
@@ -18,13 +19,16 @@ export default function AllPlans() {
   const [editingPlan, setEditingPlan] = useState<PlanDetailsProps | null>(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
 
+  const currentUser = useStore((state: any) => state.currentUser);
+  const activeLibrary = useStore((state: any) => state.activeLibrary);
+
   useEffect(() => {
     fetchPlans()
   }, [])
 
   const fetchPlans = async () => {
     try {
-      const plansData = await getPlans()
+      const plansData = await getPlans({libraryId: activeLibrary.id, currentUser})
       setPlans(plansData)
       setLoading(false)
     } catch (err) {
@@ -59,7 +63,7 @@ export default function AllPlans() {
   const handleUpdate = async () => {
     if (editingPlan) {
       try {
-        await updatePlan({ id: editingPlan.id, data: editingPlan })
+        await updatePlan({ id: editingPlan.id, data: editingPlan, currentUser })
         setPlans(plans.map((plan) => (plan.id === editingPlan.id ? editingPlan : plan)))
         setIsModalVisible(false)
         setEditingPlan(null)

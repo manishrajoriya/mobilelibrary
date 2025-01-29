@@ -15,6 +15,7 @@ import {
   fetchSeatByMemberId,
   fetchAttendanceByMemberId,
 } from "@/firebase/functions";
+import useStore from "@/hooks/store";
 
 interface MemberDetails {
   id: string;
@@ -73,6 +74,8 @@ const MemberDetails: React.FC = () => {
   const [showAttendance, setShowAttendance] = useState(false);
   const [attendanceData, setAttendanceData] = useState<Attendance[]>([]);
   const [seat, setSeat] = useState<Seat | null>(null);
+//    const currentUser = useStore((state: any) => state.currentUser);
+//  console.log("currentUser", currentUser);
 
   const fetchMemberData = async () => {
     try {

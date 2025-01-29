@@ -3,6 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "reac
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, type AuthError } from "firebase/auth"
 import { auth } from "@/utils/firebaseConfig"
 import { useRouter } from "expo-router"
+import useStore from "@/hooks/store"
+import { AppState } from "@/types/zustand"
 
 
 export default function LoginScreen() {
@@ -10,9 +12,10 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("")
   const [isLogin, setIsLogin] = useState(true)
   const router = useRouter()
-
+  const setCurrentUser = useStore((state: any) => state.setCurrentUser);
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user)
       if (user) {
         router.push("/(tabs)")
       }

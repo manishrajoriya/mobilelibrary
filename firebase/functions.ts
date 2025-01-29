@@ -9,12 +9,13 @@ import { collection, addDoc,getDoc, where, query, getDocs, startAfter,
   deleteDoc,
   } from "firebase/firestore"; 
 
-import {getAuth, } from "firebase/auth"
+import {getAuth, User, } from "firebase/auth"
 import { db } from "@/utils/firebaseConfig";
 
 
 
-
+// const {  user } = useAuth();
+// console.log(user);
 
 // Define the plan data type
 type PlanData = {
@@ -24,14 +25,44 @@ type PlanData = {
   amount: string;
 };
 
-export async function createPlan({ data }: { data: PlanData }) {
+export async function addLibrary({data, currentUser}: {data: any, currentUser: any}){
+ try {
+  if (!currentUser) {
+    throw new Error('User not authenticated. Redirecting to sign-in...');
+  }
+  const libraryRef = await addDoc(collection(db, 'libraries'), {
+    name: data.name,
+    address: data.address,
+    description: data.description,
+    admin: currentUser.uid
+  });
+  return "Library added successfully"
+ } catch (error) {
+  console.error('Error adding library.');
+  throw error;
+ }
+}
+
+export async function getLibraries({currentUser}: {currentUser: any}){
   try {
-    // Get the current user
-    const currentUser =  getAuth().currentUser
     if (!currentUser) {
       throw new Error('User not authenticated. Redirecting to sign-in...');
     }
+    const q = query(collection(db, 'libraries'), where('admin', '==', currentUser.uid));
+    const librariesSnapshot = await getDocs(q);
+    const libraries = librariesSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name, address: doc.data().address, description: doc.data().description }));
+    return libraries
+   } catch (error) {
+    console.error('Error getting libraries:', error);
+    throw error;
+   }
+}
 
+export async function createPlan({ data, currentUser, libraryId }: { data: PlanData, currentUser: any, libraryId: string }) {
+  try {
+    if (!currentUser) {
+      throw new Error('User not authenticated. Redirecting to sign-in...');
+    }
 
     // Create the plan in the Firestore database
    const planRef = await addDoc(collection(db, 'plans'), {
@@ -39,7 +70,8 @@ export async function createPlan({ data }: { data: PlanData }) {
      description: data.description,
      duration: data.duration,
      amount: data.amount,
-     admin: currentUser.uid
+     admin: currentUser.uid,
+     libraryId: libraryId
    });
 
     console.log('Plan created successfully with ID:', planRef.id);
@@ -50,14 +82,13 @@ export async function createPlan({ data }: { data: PlanData }) {
   }
 }
 
-export async function getPlans() {
+export async function getPlans({currentUser, libraryId}: {currentUser: any, libraryId: string}) {
   try {
-    const currentUser = getAuth().currentUser;
     if (!currentUser) {
       throw new Error('User not authenticated. Redirecting to sign-in...');
     }
     
-    const q = query(collection(db, 'plans'), where('admin', '==', currentUser.uid));
+    const q = query(collection(db, 'plans'), where('admin', '==', currentUser.uid), where('libraryId', '==', libraryId));
     const plansSnapshot = await getDocs(q);
     
     const plans = plansSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name, description: doc.data().description, duration: doc.data().duration, amount: doc.data().amount  }));
@@ -70,7 +101,7 @@ export async function getPlans() {
   }
 }
 
-export async function getPlanById({ id }: { id: string }) {
+export async function getPlanById({ id, }: { id: string, }) {
   try {
     const planRef = doc(db, 'plans', id);
     const planSnapshot = await getDoc(planRef);
@@ -88,10 +119,9 @@ export async function getPlanById({ id }: { id: string }) {
   }
 }
 
-export async function updatePlan({ id, data }: { id: string, data: PlanData }) {
+export async function updatePlan({ id, data, currentUser,  }: { id: string, data: PlanData, currentUser: any, }) {
   try {
     // Get the current user
-    const currentUser =  getAuth().currentUser
     if (!currentUser) {
       throw new Error('User not authenticated. Redirecting to sign-in...');
     }
@@ -126,10 +156,10 @@ export async function deletePlan({ id }: { id: string }) {
   }
 }
 
-export async function addMember({ data }: { data: any }) {
+export async function addMember({currentUser, libraryId, data}: {currentUser: User, libraryId: string, data: any}) {
   try {
     // Get the current user
-    const currentUser = getAuth().currentUser;
+    // const currentUser = getAuth().currentUser;
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...");
     }
@@ -142,6 +172,7 @@ export async function addMember({ data }: { data: any }) {
     // Create the member in the Firestore database
     const memberRef = await addDoc(collection(db, "members"), {
       admin: currentUser.uid,
+      libraryId: libraryId,
       fullName: data?.fullName,
       address: data?.address,
       contactNumber: data?.contactNumber,
@@ -202,9 +233,9 @@ export async function updateExpiredMembers() {
   }
 }
 
-export async function getMembers(pageSize: number = 5, lastVisible?: QueryDocumentSnapshot<DocumentData>) {
+export async function getMembers({ pageSize, lastVisible, currentUser, libraryId }: { pageSize: number, lastVisible: QueryDocumentSnapshot<DocumentData> | undefined, currentUser: any, libraryId: string }) {
   try {
-    const currentUser = getAuth().currentUser;
+    
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...");
     }
@@ -212,6 +243,7 @@ export async function getMembers(pageSize: number = 5, lastVisible?: QueryDocume
     let q = query(
       collection(db, "members"),
       where("admin", "==", currentUser.uid),
+      where("libraryId", "==", libraryId),
       orderBy("createdAt", "desc"),
       limit(pageSize)
     );
@@ -257,9 +289,9 @@ export async function getMembers(pageSize: number = 5, lastVisible?: QueryDocume
   }
 }
 
-export async function getExpiredMembers(pageSize: number = 5, lastVisible?: QueryDocumentSnapshot<DocumentData>) {
+export async function getExpiredMembers({ pageSize, lastVisible, currentUser, libraryId }: { pageSize: number, lastVisible: QueryDocumentSnapshot<DocumentData> | undefined, currentUser: any, libraryId: string }) {
   try {
-    const currentUser = getAuth().currentUser;
+    
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...");
     }
@@ -267,6 +299,7 @@ export async function getExpiredMembers(pageSize: number = 5, lastVisible?: Quer
     let q = query(
       collection(db, "members"),
       where("admin", "==", currentUser.uid),
+      where("libraryId", "==", libraryId),
       where("expiryDate", "<", new Date()),
       where("status", "==", "Expired"),
       orderBy("createdAt", "desc"),
@@ -314,9 +347,9 @@ export async function getExpiredMembers(pageSize: number = 5, lastVisible?: Quer
   }
 }
 
-export async function getLiveMembers(pageSize: number = 5, lastVisible?: QueryDocumentSnapshot<DocumentData>) {
+export async function getLiveMembers({ pageSize, lastVisible, currentUser, libraryId }: { pageSize: number, lastVisible: QueryDocumentSnapshot<DocumentData> | undefined, currentUser: any, libraryId: string }) {
   try {
-    const currentUser = getAuth().currentUser;
+    
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...");
     }
@@ -324,6 +357,7 @@ export async function getLiveMembers(pageSize: number = 5, lastVisible?: QueryDo
     let q = query(
       collection(db, "members"),
       where("admin", "==", currentUser.uid),
+      where("libraryId", "==", libraryId),
       where("status", "==", "Live"),
       where("expiryDate", ">", new Date()),
       orderBy("createdAt", "desc"),
@@ -443,13 +477,13 @@ export async function getMemberById({ id }: { id: string }) {
   }
 }
 
-export async function totalMemberCount() {
+export async function totalMemberCount({ currentUser, libraryId }: { currentUser: any, libraryId: string }) {
   try {
-    const currentUser = getAuth().currentUser
+    // const currentUser = getAuth().currentUser
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...")
     }
-    const q = query(collection(db, "members"), where("admin", "==", currentUser.uid),)
+    const q = query(collection(db, "members"), where("admin", "==", currentUser.uid), where("libraryId", "==", libraryId))
     const membersSnapshot = await getDocs(q)
     return membersSnapshot.size
   } catch (error: any) {
@@ -458,17 +492,18 @@ export async function totalMemberCount() {
   }
 }
 
-export async function liveMemberCount() {
+export async function liveMemberCount({ currentUser, libraryId }: { currentUser: any, libraryId: string }) {
   try {
-    const currentUser = getAuth().currentUser
+    // const currentUser = getAuth().currentUser
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...")
     }
     const q = query(
       collection(db, "members"), 
       where("admin", "==", currentUser.uid), 
-      where("status", "==", "Live"),
-      where("expiryDate", ">=", new Date())
+      // where("status", "==", "Live"),
+      where("expiryDate", ">=", new Date()),
+      where("libraryId", "==", libraryId)
     )
     const membersSnapshot = await getDocs(q)
     return membersSnapshot.size
@@ -478,16 +513,16 @@ export async function liveMemberCount() {
   }
 }
 
-export async function InactiveMemberCount() {
+export async function InactiveMemberCount({ currentUser, libraryId }: { currentUser: any, libraryId: string }) {
   try {
-    const currentUser = getAuth().currentUser
+    // const currentUser = getAuth().currentUser
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...")
     }
     const q = query(
       collection(db, "members"), 
       where("admin", "==", currentUser.uid),
-       where("status", "==", "Inactive"),
+      where("libraryId", "==", libraryId),
        where("expiryDate", "<", new Date())
       )
     const membersSnapshot = await getDocs(q)
@@ -498,9 +533,9 @@ export async function InactiveMemberCount() {
   }
 }
 
-export async function paidAmountCount() {
+export async function paidAmountCount({ currentUser, libraryId }: { currentUser: any, libraryId: string }) {
   try {
-    const currentUser = getAuth().currentUser;
+    // const currentUser = getAuth().currentUser;
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...");
     }
@@ -509,7 +544,7 @@ export async function paidAmountCount() {
     const q = query(
       collection(db, "members"),
       where("admin", "==", currentUser.uid),
-      
+      where("libraryId", "==", libraryId)
     );
     const membersSnapshot = await getDocs(q);
 
@@ -520,18 +555,18 @@ export async function paidAmountCount() {
 
     return paidAmount;
   } catch (error: any) {
-    console.error("Unable to get paid amount count:", error.message);
-    throw error;
+    console.error("Unable to get paid amount count:", error.message)
+    throw error
   }
 }
 
-export async function totalAmountCount() {
+export async function totalAmountCount({ currentUser, libraryId }: { currentUser: any, libraryId: string }) {
   try {
-    const currentUser = getAuth().currentUser
+    // const currentUser = getAuth().currentUser
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...")
     }
-    const q = query(collection(db, "members"), where("admin", "==", currentUser.uid), )
+    const q = query(collection(db, "members"), where("admin", "==", currentUser.uid), where("libraryId", "==", libraryId))
     const membersSnapshot = await getDocs(q)
     const totalAmount = membersSnapshot.docs
       .map((doc) => Number(doc.data().totalAmount) || 0) // Convert string to number and default to 0 if invalid
@@ -543,13 +578,13 @@ export async function totalAmountCount() {
   }
 }
 
-export async function dueAmountCount() {
+export async function dueAmountCount({ currentUser, libraryId }: { currentUser: any, libraryId: string }) {
   try {
-    const currentUser = getAuth().currentUser
+    // const currentUser = getAuth().currentUser
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...")
     }
-    const q = query(collection(db, "members"), where("admin", "==", currentUser.uid))
+    const q = query(collection(db, "members"), where("admin", "==", currentUser.uid), where("libraryId", "==", libraryId))
     const membersSnapshot = await getDocs(q)
     const dueAmount = membersSnapshot.docs
       .map((doc) => Number(doc.data().dueAmount) || 0) // Convert string to number and default to 0 if invalid
@@ -561,12 +596,9 @@ export async function dueAmountCount() {
   }
 }
 
-export const saveAttendance = async (attendanceData: {
-  date: string;
-  members: { id: string; fullName: string; isPresent: boolean }[];
-}) => {
+export const saveAttendance = async ({ currentUser, attendanceData, libraryId }: { currentUser: any, attendanceData: { date: string; members: { id: string; fullName: string; isPresent: boolean }[] }, libraryId: string }) => {
   try {
-    const currentUser = getAuth().currentUser;
+    // const currentUser = getAuth().currentUser;
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...");
     }
@@ -577,7 +609,8 @@ export const saveAttendance = async (attendanceData: {
     const q = query(
       attendanceCollection,
       where("date", "==", attendanceData.date),
-      where("admin", "==", currentUser.uid)
+      where("admin", "==", currentUser.uid),
+      where("libraryId", "==", libraryId)
     );
     const querySnapshot = await getDocs(q);
 
@@ -596,6 +629,7 @@ export const saveAttendance = async (attendanceData: {
         date: attendanceData.date,
         members: attendanceData.members,
         admin: currentUser.uid,
+        libraryId,
         timestamp: new Date(),
       });
       console.log("Attendance saved with ID:", docRef.id);
@@ -607,14 +641,14 @@ export const saveAttendance = async (attendanceData: {
   }
 };
 
-export const getAttendanceByDate = async (date: string) => {
+export const getAttendanceByDate = async ({ currentUser, date, libraryId }: { currentUser: any, date: string, libraryId: string }) => {
   try {
-    const currentUser = getAuth().currentUser
+    // const currentUser = getAuth().currentUser
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...")
     }
     const attendanceCollection = collection(db, "attendance");
-    const q = query(attendanceCollection, where("date", "==", date), where("admin", "==", currentUser.uid))
+    const q = query(attendanceCollection, where("date", "==", date), where("admin", "==", currentUser.uid), where("libraryId", "==", libraryId))
     const attendanceSnapshot = await getDocs(q)
     const attendance = attendanceSnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -656,9 +690,9 @@ export const getAttendanceById = async (id: string) => {
   }
 }
 
-export const addSeats = async (numberOfSeats: number) => {
+export const addSeats = async ({ currentUser, numberOfSeats, libraryId }: { currentUser: any, numberOfSeats: number, libraryId: string }) => {
   try {
-    const currentUser = getAuth().currentUser
+    // const currentUser = getAuth().currentUser
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...")
     }
@@ -675,6 +709,8 @@ export const addSeats = async (numberOfSeats: number) => {
         allocatedTo: null,
         memberName: null,  
         memberExpiryDate: null,
+        admin: currentUser.uid,
+        libraryId: libraryId
       });
     }
   
@@ -705,6 +741,7 @@ export const allotSeat = async (seatId: string, memberId: string, memberName: st
       allocatedTo: memberId,
       memberName: memberName,
       memberExpiryDate: expiryDate,
+      
     });
     return `Seat ${seatId} is allocated to member ${memberId}`;
   } catch (error) {
@@ -713,9 +750,9 @@ export const allotSeat = async (seatId: string, memberId: string, memberName: st
   }
 }
 
-export const fetchSeats = async () => {
+export const fetchSeats = async ({currentUser, libraryId }: { currentUser: any, libraryId: string }) => {
   try {
-    const q = query(collection(db, "seats"), orderBy("seatId", "asc"),);
+    const q = query(collection(db, "seats"),where("admin", "==", currentUser.uid), where("libraryId", "==", libraryId), orderBy("seatId", "asc"),);
     const seatCollection = await getDocs(q);
     const seats = seatCollection.docs.map(doc => ({
       id: doc.id,

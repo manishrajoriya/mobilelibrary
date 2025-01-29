@@ -6,7 +6,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Onboarding from '@/component/Onbording';
 import { auth } from '@/utils/firebaseConfig';
 import { useRouter } from 'expo-router';
-
+import { AuthProvider } from '@/hooks/authContext';
+import useStore from '@/hooks/store';
 
 export default function Index() {
   const router = useRouter();
@@ -20,12 +21,20 @@ export default function Index() {
     return () => unsubscribe()
   }, [auth])
 
+  const initializeStore = useStore((state: any) => state.initializeStore);
+
+  useEffect(() => {
+    initializeStore(); // Load persisted state
+  }, []);
+
+
   return (
-   
+   <AuthProvider>
    <SafeAreaProvider>
    <Onboarding/>
       <Toast/>
     </SafeAreaProvider>
+    </AuthProvider>
  
   );
 }

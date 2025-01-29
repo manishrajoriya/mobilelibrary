@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, FlatList } from "react-native"
 import { addSeats, fetchSeats } from "@/firebase/functions"
 import { useNavigation } from "@react-navigation/native"
+import useStore from "@/hooks/store"
 
 interface Seat {
   id: string
@@ -16,6 +17,9 @@ const AddSeatsPage: React.FC = () => {
   const [seats, setSeats] = useState<Seat[]>([])
   const navigation = useNavigation()
 
+  const currentUser = useStore((state: any) => state.currentUser);
+  const activeLibrary = useStore((state: any) => state.activeLibrary);
+
   useEffect(() => {
     loadSeats()
   }, [])
@@ -23,7 +27,7 @@ const AddSeatsPage: React.FC = () => {
   const loadSeats = async () => {
     setLoading(true)
     try {
-      const fetchedSeats = await fetchSeats()
+      const fetchedSeats = await fetchSeats({ currentUser: currentUser, libraryId: activeLibrary.id })
       setSeats(fetchedSeats)
     } catch (error) {
       console.error("Error fetching seats:", error)
@@ -41,7 +45,7 @@ const AddSeatsPage: React.FC = () => {
 
     setLoading(true)
     try {
-      const result = await addSeats(Number.parseInt(numberOfSeats))
+      const result = await addSeats({ numberOfSeats : Number.parseInt(numberOfSeats), currentUser, libraryId: activeLibrary.id })
       Alert.alert("Success", result)
       setNumberOfSeats("")
       await loadSeats() // Reload seats after adding new ones

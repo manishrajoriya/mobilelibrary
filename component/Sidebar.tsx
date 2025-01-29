@@ -14,6 +14,9 @@ import WhatsAppMessageScreen from "./WhatsappMessage"
 import AttendancePage from "./member/Attendance"
 import AttendanceReport from "./member/AttendaceReport"
 import AllotSeat from "./member/AllotSeat"
+import LogoutScreen from "./Logout"
+import AddLibraryScreen from "./library/AddLibrary"
+
 
 type DrawerParamList = {
   Home: undefined
@@ -28,6 +31,9 @@ type DrawerParamList = {
   Attendance: undefined
   AttendanceReport: undefined
   AllotSeat: undefined
+  Logout: undefined
+  AddLibrary: undefined
+
 }
 
 const Drawer = createDrawerNavigator<DrawerParamList>()
@@ -123,11 +129,19 @@ const Sidebar = () => {
           drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
         }}
       />
+      
       <Drawer.Screen
         name="Profile"
         component={MemberProfileCard}
         options={{
           drawerIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
+        }}
+      />
+      <Drawer.Screen
+        name="AddLibrary"
+        component={AddLibraryScreen}
+        options={{
+          drawerIcon: ({ color, size }) => <Ionicons name="library-outline" size={size} color={color} />,
         }}
       />
        <Drawer.Screen
@@ -204,7 +218,14 @@ const Sidebar = () => {
           drawerIcon: ({ color, size }) => <Ionicons name="pricetag-outline" size={size} color={color} />,
         }}
        />
-
+       <Drawer.Screen
+        name="Logout"
+        component={LogoutScreen}
+        options={{
+          drawerIcon: ({ color, size }) => <Ionicons name="log-out-outline" size={size} color={color} />,
+        }}
+       />
+       
     </Drawer.Navigator>
   )
 }
