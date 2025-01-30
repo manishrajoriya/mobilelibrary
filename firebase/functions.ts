@@ -164,11 +164,6 @@ export async function addMember({currentUser, libraryId, data}: {currentUser: Us
       throw new Error("User not authenticated. Redirecting to sign-in...");
     }
 
-    // Check if the membership is already expired
-    const expiryDate = new Date(data.expiryDate);
-    const currentDate = new Date();
-    const status = expiryDate <= currentDate ? "Expired" : data.status;
-
     // Create the member in the Firestore database
     const memberRef = await addDoc(collection(db, "members"), {
       admin: currentUser.uid,
@@ -179,8 +174,6 @@ export async function addMember({currentUser, libraryId, data}: {currentUser: Us
       email: data?.email,
       addmissionDate: data?.admissionDate,
       expiryDate: data?.expiryDate,
-      status: status, // Set status based on expiry date
-      seatNumber: data?.seatNumber,
       profileImage: data?.profileImage,
       document: data?.document,
       dueAmount: data?.dueAmount,
@@ -200,38 +193,7 @@ export async function addMember({currentUser, libraryId, data}: {currentUser: Us
   }
 }
 
-export async function updateExpiredMembers() {
-  try {
-    // Get the current date
-    const currentDate = new Date();
 
-    // Query members whose expiryDate is in the past and status is not "expired"
-    const membersRef = collection(db, "members");
-    const q = query(
-      membersRef,
-      where("expiryDate", "<=", currentDate),
-      where("status", "!=", "expired") // Only update members who are not already marked as expired
-    );
-
-    // Fetch the matching members
-    const querySnapshot = await getDocs(q);
-
-    // Update each member's status to "expired"
-    querySnapshot.forEach(async (memberDoc) => {
-      const memberRef = doc(db, "members", memberDoc.id);
-      await updateDoc(memberRef, {
-        status: "expired",
-        updatedAt: new Date(), // Update the last modified timestamp
-      });
-      console.log(`Member ${memberDoc.id} status updated to "expired".`);
-    });
-
-    console.log("Expired members updated successfully.");
-  } catch (error: any) {
-    console.error("Error updating expired members:", error.message);
-    throw error; // Re-throw the error for handling by the caller
-  }
-}
 
 export async function getMembers({ pageSize, lastVisible, currentUser, libraryId }: { pageSize: number, lastVisible: QueryDocumentSnapshot<DocumentData> | undefined, currentUser: any, libraryId: string }) {
   try {
@@ -263,8 +225,6 @@ export async function getMembers({ pageSize, lastVisible, currentUser, libraryId
       email: doc.data().email,
       addmissionDate: doc.data().addmissionDate.toDate(),
       expiryDate: doc.data().expiryDate.toDate(),
-      status: doc.data().status,
-      seatNumber: doc.data().seatNumber,
       profileImage: doc.data().profileImage,
       document: doc.data().document,
       dueAmount: doc.data().dueAmount,
@@ -301,7 +261,6 @@ export async function getExpiredMembers({ pageSize, lastVisible, currentUser, li
       where("admin", "==", currentUser.uid),
       where("libraryId", "==", libraryId),
       where("expiryDate", "<", new Date()),
-      where("status", "==", "Expired"),
       orderBy("createdAt", "desc"),
       limit(pageSize)
     );
@@ -321,8 +280,6 @@ export async function getExpiredMembers({ pageSize, lastVisible, currentUser, li
       email: doc.data().email,
       addmissionDate: doc.data().addmissionDate.toDate(),
       expiryDate: doc.data().expiryDate.toDate(),
-      status: doc.data().status,
-      seatNumber: doc.data().seatNumber,
       profileImage: doc.data().profileImage,
       document: doc.data().document,
       dueAmount: doc.data().dueAmount,
@@ -358,7 +315,6 @@ export async function getLiveMembers({ pageSize, lastVisible, currentUser, libra
       collection(db, "members"),
       where("admin", "==", currentUser.uid),
       where("libraryId", "==", libraryId),
-      where("status", "==", "Live"),
       where("expiryDate", ">", new Date()),
       orderBy("createdAt", "desc"),
       limit(pageSize)
@@ -379,8 +335,6 @@ export async function getLiveMembers({ pageSize, lastVisible, currentUser, libra
       email: doc.data().email,
       addmissionDate: doc.data().addmissionDate.toDate(),
       expiryDate: doc.data().expiryDate.toDate(),
-      status: doc.data().status,
-      seatNumber: doc.data().seatNumber,
       profileImage: doc.data().profileImage,
       document: doc.data().document,
       dueAmount: doc.data().dueAmount,
@@ -415,7 +369,6 @@ export async function updateMember({ id, data }: { id: string, data: any }) {
       email: data?.email,
       addmissionDate: data?.admissionDate,
       expiryDate: data?.expiryDate,
-      status: data?.status,
       seatNumber: data?.seatNumber,
       profileImage: data?.profileImage,
       document: data?.document,
@@ -433,7 +386,7 @@ export async function updateMember({ id, data }: { id: string, data: any }) {
   }
 }
 
-export async function deleteMember({ id }: { id: string }) {
+export async function deleteMember({ id, }: { id: string }) {
   try {
     const memberRef = doc(db, 'members', id)
     await deleteDoc(memberRef)
@@ -501,7 +454,6 @@ export async function liveMemberCount({ currentUser, libraryId }: { currentUser:
     const q = query(
       collection(db, "members"), 
       where("admin", "==", currentUser.uid), 
-      // where("status", "==", "Live"),
       where("expiryDate", ">=", new Date()),
       where("libraryId", "==", libraryId)
     )
@@ -859,4 +811,4 @@ export const fetchAttendanceByMemberId = async (memberId: string) => {
     console.error("Error fetching attendance by member ID:", error);
     throw error;
   }
-};
+}

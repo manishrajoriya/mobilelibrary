@@ -151,7 +151,7 @@ export default function MembersDashboard() {
       value: 600,
       color: "#EA4335",
       style: { backgroundColor: "#fff" },
-      onPress: () => router.push("/finance"),
+      onPress: () => router.push("/memberPaymemt"),
     },
   ]
 

@@ -138,7 +138,7 @@ const AllocateSeatsPage: React.FC = () => {
       setSelectedSeat(null)
       setSelectedMember(null)
       setSelectedSeatData(null)
-      triggerAnimation()
+       triggerAnimation()
     } catch (error) {
       Alert.alert("Error: Something went wrong")
     } finally {

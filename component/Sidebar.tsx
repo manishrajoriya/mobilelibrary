@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer"
 import { Ionicons } from "@expo/vector-icons" // Use Expo or your preferred icon library
 import MembersDashboard from "./MemberDashbord"
-import MemberProfileCard from "./MemberProfileCard"
+import MemberProfileCard from "./member/MemberProfileCard"
 import ShiftForm from "./ShiftForm"
 import AddMemberForm from "./member/AddMemberForm"
 import ShiftDetails from "./ShiftDetails"

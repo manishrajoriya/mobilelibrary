@@ -1,10 +1,10 @@
 import { View, Text } from 'react-native'
 import React from 'react'
-import MemberProfileCards from '@/component/member/MemberProfileCard'
+import MemberPaymentList from '@/component/member/MemberPaymentList.tsx'
 
 const index = () => {
   return (
-    <MemberProfileCards/>
+    <MemberPaymentList/>
   )
 }
 

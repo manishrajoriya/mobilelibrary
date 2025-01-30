@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import type React from "react"
+import { useEffect, useState } from "react"
 import {
   StyleSheet,
   Text,
@@ -7,54 +8,53 @@ import {
   ActivityIndicator,
   Image,
   TouchableOpacity,
-} from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { AntDesign, MaterialIcons } from "@expo/vector-icons";
-import {
-  getMemberById,
-  fetchSeatByMemberId,
-  fetchAttendanceByMemberId,
-} from "@/firebase/functions";
-import useStore from "@/hooks/store";
+  Modal,
+  Alert,
+} from "react-native"
+import { useRouter, useLocalSearchParams } from "expo-router"
+import { AntDesign, MaterialIcons } from "@expo/vector-icons"
+import { getMemberById, fetchSeatByMemberId, fetchAttendanceByMemberId, deleteMember } from "@/firebase/functions"
+import useStore from "@/hooks/store"
+import Toast from "react-native-toast-message"
 
 interface MemberDetails {
-  id: string;
-  fullName: string;
-  address: string;
-  contactNumber: string;
-  email: string;
-  addmissionDate: Date;
-  expiryDate: Date;
-  status: string;
-  seatNumber: string;
-  profileImage: string;
-  document: string;
-  dueAmount: number;
-  totalAmount: number;
-  paidAmount: number;
-  planId: string;
-  plan: string;
+  id: string
+  fullName: string
+  address: string
+  contactNumber: string
+  email: string
+  addmissionDate: Date
+  expiryDate: Date
+  status: string
+  seatNumber: string
+  profileImage: string
+  document: string
+  dueAmount: number
+  totalAmount: number
+  paidAmount: number
+  planId: string
+  plan: string
 }
 
 interface DetailRowProps {
-  label: string;
-  value: string | number;
-  icon?: React.ReactNode;
+  label: string
+  value: string | number
+  icon?: React.ReactNode
 }
 
 interface Attendance {
-   id: string;
-    date: string;
-    status: boolean;
+  id: string
+  date: string
+  status: boolean
 }
 
 interface Seat {
-   id: string;
-    seatId: string;
-    isAllocated: boolean;
-    allocatedTo: string;
-    memberName: string;
-    memberExpiryDate: Date;
+  id: string
+  seatId: string
+  isAllocated: boolean
+  allocatedTo: string
+  memberName: string
+  memberExpiryDate: Date
 }
 
 const DetailRow: React.FC<DetailRowProps> = ({ label, value, icon }) => (
@@ -63,49 +63,89 @@ const DetailRow: React.FC<DetailRowProps> = ({ label, value, icon }) => (
     <Text style={styles.detailLabel}>{label}</Text>
     <Text style={styles.detailValue}>{value || "NA"}</Text>
   </View>
-);
+)
 
 const MemberDetails: React.FC = () => {
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const memberId = params.id as string | undefined;
-  const [member, setMember] = useState<MemberDetails | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [showAttendance, setShowAttendance] = useState(false);
-  const [attendanceData, setAttendanceData] = useState<Attendance[]>([]);
-  const [seat, setSeat] = useState<Seat | null>(null);
-//    const currentUser = useStore((state: any) => state.currentUser);
-//  console.log("currentUser", currentUser);
+  const router = useRouter()
+  const params = useLocalSearchParams()
+  const memberId = params.id as string | undefined
+  const [member, setMember] = useState<MemberDetails | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [showAttendance, setShowAttendance] = useState(false)
+  const [attendanceData, setAttendanceData] = useState<Attendance[]>([])
+  const [seat, setSeat] = useState<Seat | null>(null)
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [modalImage, setModalImage] = useState<string | null>(null)
+  const [isImageLoading, setIsImageLoading] = useState(false)
+  const [imageLoadError, setImageLoadError] = useState(false)
+  //    const currentUser = useStore((state: any) => state.currentUser);
+  //  console.log("currentUser", currentUser);
 
   const fetchMemberData = async () => {
     try {
       if (memberId) {
-        const fetchedMember = await getMemberById({ id: memberId });
-        setMember(fetchedMember);
+        const fetchedMember = await getMemberById({ id: memberId })
+        setMember(fetchedMember)
 
-        const fetchedAttendance = await fetchAttendanceByMemberId(memberId);
-        setAttendanceData(fetchedAttendance);
+        const fetchedAttendance = await fetchAttendanceByMemberId(memberId)
+        setAttendanceData(fetchedAttendance)
 
-        const fetchedSeat = await fetchSeatByMemberId(memberId);
-        setSeat(fetchedSeat[0]);
+        const fetchedSeat = await fetchSeatByMemberId(memberId)
+        setSeat(fetchedSeat[0])
       }
     } catch (error) {
-      console.error("Error fetching member data:", error);
+      console.error("Error fetching member data:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchMemberData();
-  }, [memberId]);
+    fetchMemberData()
+  }, [memberId])
+
+  const handleMemberDelete = async () => {
+    try {
+      Alert.alert(
+        "Delete Member",
+        "Are you sure you want to delete this member?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Delete",
+            onPress: async () => {
+              await deleteMember({ id: member?.id! })
+              Toast.show({
+                type: "success",
+                text1: "Member deleted successfully",
+              })
+              // Navigation
+              setTimeout(() => {
+                router.back()
+              }, 500)
+            },
+            style: "destructive",
+          },
+        ],
+        { cancelable: true },
+      )
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: error.message,
+      })
+    }
+  }
 
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="#6B46C1" />
       </View>
-    );
+    )
   }
 
   if (!member) {
@@ -113,14 +153,21 @@ const MemberDetails: React.FC = () => {
       <View style={styles.noDataContainer}>
         <Text style={styles.noDataText}>No data available</Text>
       </View>
-    );
+    )
   }
 
   return (
     <ScrollView style={styles.container}>
       {/* Gradient Header */}
       <View style={styles.header}>
-        <Image source={{ uri: member.profileImage }} style={styles.avatar} />
+        <TouchableOpacity
+          onPress={() => {
+            setModalImage(member.profileImage)
+            setIsModalVisible(true)
+          }}
+        >
+          <Image source={{ uri: member.profileImage }} style={styles.avatar} />
+        </TouchableOpacity>
         <View style={styles.profileInfo}>
           <Text style={styles.label}>Name</Text>
           <Text style={styles.headerValue}>{member.fullName}</Text>
@@ -143,11 +190,7 @@ const MemberDetails: React.FC = () => {
           value={member.addmissionDate.toDateString()}
           icon={<MaterialIcons name="event" size={16} color="#6B46C1" />}
         />
-        <DetailRow
-          label="Email"
-          value={member.email}
-          icon={<MaterialIcons name="email" size={16} color="#6B46C1" />}
-        />
+        <DetailRow label="Email" value={member.email} icon={<MaterialIcons name="email" size={16} color="#6B46C1" />} />
         {seat ? (
           <DetailRow
             label="Seat Number"
@@ -155,38 +198,23 @@ const MemberDetails: React.FC = () => {
             icon={<MaterialIcons name="chair" size={16} color="#6B46C1" />}
           />
         ) : (
-          <DetailRow
-            label="Seat Number"
-            value="N/A"
-            icon={<MaterialIcons name="chair" size={16} color="#6B46C1" />}
-          />
+          <DetailRow label="Seat Number" value="N/A" icon={<MaterialIcons name="chair" size={16} color="#6B46C1" />} />
         )}
       </View>
 
       {/* Attendance Report */}
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => setShowAttendance(!showAttendance)}
-      >
+      <TouchableOpacity style={styles.card} onPress={() => setShowAttendance(!showAttendance)}>
         <View style={styles.reportHeader}>
           <Text style={styles.reportTitle}>Attendance Report</Text>
-          <AntDesign
-            name={showAttendance ? "up" : "down"}
-            size={20}
-            color="#6B46C1"
-          />
+          <AntDesign name={showAttendance ? "up" : "down"} size={20} color="#6B46C1" />
         </View>
         {showAttendance && (
           <View style={styles.attendanceContainer}>
             {attendanceData.length > 0 ? (
               attendanceData.map((attendance) => (
                 <View key={attendance.id} style={styles.attendanceRow}>
-                  <Text style={styles.attendanceDate}>
-                    {attendance.date}
-                  </Text>
-                  <Text style={styles.attendanceStatus}>
-                    {attendance.status ? "Present" : "Absent"}
-                  </Text>
+                  <Text style={styles.attendanceDate}>{attendance.date}</Text>
+                  <Text style={styles.attendanceStatus}>{attendance.status ? "Present" : "Absent"}</Text>
                 </View>
               ))
             ) : (
@@ -200,10 +228,14 @@ const MemberDetails: React.FC = () => {
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Documents:</Text>
         {member.document ? (
-          <Image
-            source={{ uri: member.document }}
-            style={styles.documentImage}
-          />
+          <TouchableOpacity
+            onPress={() => {
+              setModalImage(member.document)
+              setIsModalVisible(true)
+            }}
+          >
+            <Image style={styles.documentImage} source={{ uri: member.document }} />
+          </TouchableOpacity>
         ) : (
           <Text style={styles.noDataText}>:( Nothing Found</Text>
         )}
@@ -211,8 +243,8 @@ const MemberDetails: React.FC = () => {
 
       {/* Action Buttons */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.gymPlanButton}>
-          <Text style={styles.gymPlanButtonText}>GYM Plan</Text>
+        <TouchableOpacity style={styles.gymPlanButton} onPress={handleMemberDelete}>
+          <Text style={styles.gymPlanButtonText}>Delete Member</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.addOnPlanButton}>
           <Text style={styles.addOnPlanButtonText}>Add On Plan</Text>
@@ -265,9 +297,49 @@ const MemberDetails: React.FC = () => {
           </View>
         </View>
       </View>
+
+      <Modal
+        visible={isModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => {
+              setIsModalVisible(false)
+              setImageLoadError(false)
+            }}
+          >
+            <AntDesign name="closecircleo" size={24} color="white" />
+          </TouchableOpacity>
+          {modalImage && (
+            <>
+              {isImageLoading && <ActivityIndicator size="large" color="#ffffff" />}
+              {imageLoadError ? (
+                <Text style={styles.errorText}>Failed to load image</Text>
+              ) : (
+                <Image
+                  source={{ uri: modalImage }}
+                  style={styles.fullSizeImage}
+                  resizeMode="contain"
+                  onLoadStart={() => setIsImageLoading(true)}
+                  onLoadEnd={() => setIsImageLoading(false)}
+                  onError={() => {
+                    setIsImageLoading(false)
+                    setImageLoadError(true)
+                  }}
+                />
+              )}
+            </>
+          )}
+        </View>
+      </Modal>
+      <Toast/>
     </ScrollView>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -489,6 +561,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-});
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullSizeImage: {
+    width: "100%",
+    height: "100%",
+  },
+  closeButton: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    zIndex: 1,
+  },
+  errorText: {
+    color: "#ffffff",
+    fontSize: 16,
+    textAlign: "center",
+  },
+})
 
-export default MemberDetails;
+export default MemberDetails
+

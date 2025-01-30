@@ -46,7 +46,7 @@ export default function AddMemberForm() {
   const currentUser = useStore((state: any) => state.currentUser);
   const activeLibrary = useStore((state: any) => state.activeLibrary);
 
-  const statusOptions = ["Live", "Pending", "Expired"];
+  // const statusOptions = ["Live", "Pending", "Expired"];
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -59,7 +59,7 @@ export default function AddMemberForm() {
       Object.keys(data).forEach((key) => setValue(key as keyof FormData, ""));
       setValue("admissionDate", new Date());
       setValue("expiryDate", new Date());
-      setValue("status", "Live");
+      
     } catch (error) {
       console.error("Error adding member: ", error);
       Toast.show({
@@ -334,7 +334,7 @@ export default function AddMemberForm() {
         />
 
         {/* Status */}
-        <Controller
+        {/* <Controller
           control={control}
           rules={{ required: "Status is required" }}
           render={({ field: { onChange, value }, fieldState: { error } }) => (
@@ -351,7 +351,7 @@ export default function AddMemberForm() {
             </View>
           )}
           name="status"
-        />
+        /> */}
 
         {/* Seat Number */}
         {/* <Controller

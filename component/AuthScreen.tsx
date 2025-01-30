@@ -4,7 +4,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, type AuthEr
 import { auth } from "@/utils/firebaseConfig"
 import { useRouter } from "expo-router"
 import useStore from "@/hooks/store"
-import { AppState } from "@/types/zustand"
+
 
 
 export default function LoginScreen() {

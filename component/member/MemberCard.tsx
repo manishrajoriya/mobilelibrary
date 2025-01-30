@@ -52,9 +52,11 @@ const MemberCard: React.FC<{ member: MemberDetails, onPress: () => void }> = Rea
             </View>
           </View>
           <View style={styles.statusSection}>
-            <View style={[styles.statusBadge, { backgroundColor: member.status === "Active" ? "#E9D5FF" : "#FEE2E2" }]}>
-              <Text style={[styles.statusText, { color: member.status === "Active" ? "#6B46C1" : "#DC2626" }]}>
-                {member.status}
+            <View style={[styles.statusBadge, { backgroundColor: member.expiryDate > new Date() ? "#E9D5FF" : "#FEE2E2" }]}>
+              <Text style={[styles.statusText, { color: member.expiryDate > new Date() ? "#6B46C1" : "#DC2626" }]}>
+                {
+                  member.expiryDate > new Date() ? "Active" : "Expired"
+                }
               </Text>
             </View>
             {/* <Text style={styles.seatText}>Seat: {member.seatNumber}</Text> */}

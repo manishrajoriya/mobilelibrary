@@ -11,8 +11,7 @@ export interface MemberDetails {
   paidAmount: string
   planId?: string
   profileImage?: string
-  seatNumber: string
-  status: string
+
   totalAmount: string
   plan?: string
  

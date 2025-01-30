@@ -19,8 +19,6 @@ export const useAddMemberForm = () => {
       document: "",
       admissionDate: new Date(),
       expiryDate: new Date(),
-      status: "Live",
-      seatNumber: "",
       planId: "",
     },
   })
