@@ -25,22 +25,22 @@ const onboardingData = [
   {
     title: "Welcome to LibraryPal",
     description: "Your personal library management assistant",
-    image: "/assets/images/book1.jpg",
+    image: "../assets/images/book1.jpg",
   },
   {
     title: "Browse Your Collection",
     description: "Easily manage and browse through your book collection",
-    image: "/assets/images/book2.jpg",
+    image: "../assets/images/book2.jpg",
   },
   {
     title: "Track Your Reading",
     description: "Set reading goals and track your progress",
-    image: "/assets/images/book3.jpg",
+    image: "../assets/images/book3.jpg",
   },
   {
     title: "Discover New Books",
     description: "Get personalized book recommendations",
-    image: "/assets/images/book3.jpg",
+    image: "../assets/images/book4.jpg",
   },
 ];
 

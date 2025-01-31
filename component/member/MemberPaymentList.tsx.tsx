@@ -1,42 +1,42 @@
-import React, { useState, useEffect } from "react"
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from "react-native"
-import { useRouter } from "expo-router"
-import { getMembers } from "@/firebase/functions"
-import type { QueryDocumentSnapshot, DocumentData } from "firebase/firestore"
-import useStore from "@/hooks/store"
-import * as XLSX from "xlsx"
-import * as FileSystem from "expo-file-system"
-import * as Sharing from "expo-sharing"
-import { Ionicons } from "@expo/vector-icons"
+import React, { useState, useEffect } from "react";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
+import { useRouter } from "expo-router";
+import { getMembers } from "@/firebase/functions";
+import type { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
+import useStore from "@/hooks/store";
+import * as XLSX from "xlsx";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import { Ionicons } from "@expo/vector-icons";
 
 interface Member {
-  id: string
-  fullName: string
-  dueAmount: number
-  totalAmount: number
-  paidAmount: number
+  id: string;
+  fullName: string;
+  dueAmount: number;
+  totalAmount: number;
+  paidAmount: number;
 }
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 10;
 
 export default function MemberPaymentList() {
-  const [members, setMembers] = useState<Member[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | undefined>(undefined)
-  const [hasMore, setHasMore] = useState(true)
-  const router = useRouter()
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | undefined>(undefined);
+  const [hasMore, setHasMore] = useState(true);
+  const router = useRouter();
 
-  const currentUser = useStore((state: any) => state.currentUser)
-  const activeLibrary = useStore((state: any) => state.activeLibrary)
+  const currentUser = useStore((state: any) => state.currentUser);
+  const activeLibrary = useStore((state: any) => state.activeLibrary);
 
   useEffect(() => {
-    fetchMembers()
-  }, [])
+    fetchMembers();
+  }, []);
 
   const fetchMembers = async (loadMore = false) => {
-    if (!loadMore) setLoading(true)
-    setError(null)
+    if (!loadMore) setLoading(true);
+    setError(null);
 
     try {
       const result = await getMembers({
@@ -44,42 +44,42 @@ export default function MemberPaymentList() {
         lastVisible: loadMore ? lastVisible : undefined,
         currentUser: currentUser,
         libraryId: activeLibrary?.id || "",
-      })
+      });
 
-      setMembers((prevMembers) => (loadMore ? [...prevMembers, ...result.members] : result.members))
-      setLastVisible(result.lastVisibleDoc)
-      setHasMore(result.hasMore)
+      setMembers((prevMembers) => (loadMore ? [...prevMembers, ...result.members] : result.members));
+      setLastVisible(result.lastVisibleDoc);
+      setHasMore(result.hasMore);
     } catch (err) {
-      setError("Failed to fetch members. Please try again.")
-      console.error(err)
+      setError("Failed to fetch members. Please try again.");
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  const renderHeader = () => (
+    <View style={styles.tableHeader}>
+      <Text style={styles.headerText}>Full Name</Text>
+      <Text style={styles.headerText}>Paid Amount</Text>
+      <Text style={styles.headerText}>Due Amount</Text>
+      <Text style={styles.headerText}>Total Amount</Text>
+    </View>
+  );
 
   const renderMemberItem = ({ item }: { item: Member }) => (
-    <TouchableOpacity style={styles.memberItem}>
-      <Text style={styles.memberName}>{item.fullName}</Text>
-      <View style={styles.amountContainer}>
-        <Text style={styles.amountLabel}>Paid:</Text>
-        <Text style={styles.amountValue}>{item.paidAmount}</Text>
-      </View>
-      <View style={styles.amountContainer}>
-        <Text style={styles.amountLabel}>Due:</Text>
-        <Text style={[styles.amountValue, styles.dueAmount]}>{item.dueAmount}</Text>
-      </View>
-      <View style={styles.amountContainer}>
-        <Text style={styles.amountLabel}>Total:</Text>
-        <Text style={styles.amountValue}>{item.totalAmount}</Text>
-      </View>
-    </TouchableOpacity>
-  )
+    <View style={styles.tableRow}>
+      <Text style={styles.cellText}>{item.fullName}</Text>
+      <Text style={styles.cellText}>{item.paidAmount}</Text>
+      <Text style={[styles.cellText, styles.dueAmount]}>{item.dueAmount}</Text>
+      <Text style={styles.cellText}>{item.totalAmount}</Text>
+    </View>
+  );
 
   const renderFooter = () => {
-    if (!hasMore) return <Text style={styles.endMessage}>No more members to load</Text>
-    if (loading && members.length > 0) return <ActivityIndicator size="large" color="#6B46C1" />
-    return null
-  }
+    if (!hasMore) return <Text style={styles.endMessage}>No more members to load</Text>;
+    if (loading && members.length > 0) return <ActivityIndicator size="large" color="#6B46C1" />;
+    return null;
+  };
 
   const generateExcel = async () => {
     try {
@@ -90,36 +90,36 @@ export default function MemberPaymentList() {
           "Due Amount": member.dueAmount,
           "Total Amount": member.totalAmount,
         })),
-      )
+      );
 
-      const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, "Members")
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Members");
 
-      const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" })
+      const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
 
-      const fileName = FileSystem.documentDirectory + "member_payment_summary.xlsx"
+      const fileName = FileSystem.documentDirectory + "member_payment_summary.xlsx";
       await FileSystem.writeAsStringAsync(fileName, wbout, {
         encoding: FileSystem.EncodingType.Base64,
-      })
+      });
 
       await Sharing.shareAsync(fileName, {
         UTI: ".xlsx",
         mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      })
+      });
 
-      Alert.alert("Success", "Excel file has been generated and shared.")
+      Alert.alert("Success", "Excel file has been generated and shared.");
     } catch (error) {
-      console.error("Error generating Excel:", error)
-      Alert.alert("Error", "Failed to generate Excel file. Please try again.")
+      console.error("Error generating Excel:", error);
+      Alert.alert("Error", "Failed to generate Excel file. Please try again.");
     }
-  }
+  };
 
   if (loading && members.length === 0) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#6B46C1" />
       </View>
-    )
+    );
   }
 
   if (error) {
@@ -130,7 +130,7 @@ export default function MemberPaymentList() {
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
       </View>
-    )
+    );
   }
 
   return (
@@ -145,12 +145,13 @@ export default function MemberPaymentList() {
         data={members}
         renderItem={renderMemberItem}
         keyExtractor={(item) => item.id}
+        ListHeaderComponent={renderHeader}
         onEndReached={() => hasMore && fetchMembers(true)}
         onEndReachedThreshold={0.1}
         ListFooterComponent={renderFooter}
       />
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -175,36 +176,39 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
   },
-  memberItem: {
+  tableHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 16,
+    backgroundColor: "#6B46C1",
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  headerText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+    flex: 1,
+    textAlign: "center",
+  },
+  tableRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 16,
     backgroundColor: "#fff",
     borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
+    marginBottom: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  memberName: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: "#333",
-  },
-  amountContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  amountLabel: {
+  cellText: {
     fontSize: 14,
-    color: "#666",
-  },
-  amountValue: {
-    fontSize: 14,
-    fontWeight: "500",
     color: "#333",
+    flex: 1,
+    textAlign: "center",
   },
   dueAmount: {
     color: "#e53e3e",
@@ -236,5 +240,4 @@ const styles = StyleSheet.create({
     color: "#666",
     padding: 16,
   },
-})
-
+});

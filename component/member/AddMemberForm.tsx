@@ -46,7 +46,6 @@ export default function AddMemberForm() {
   const currentUser = useStore((state: any) => state.currentUser);
   const activeLibrary = useStore((state: any) => state.activeLibrary);
 
-  // const statusOptions = ["Live", "Pending", "Expired"];
 
   const onSubmit = async (data: FormData) => {
     try {

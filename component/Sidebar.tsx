@@ -1,92 +1,231 @@
-import React from "react"
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
-import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer"
-import { Ionicons } from "@expo/vector-icons" // Use Expo or your preferred icon library
-import MembersDashboard from "./MemberDashbord"
-import MemberProfileCard from "./member/MemberProfileCard"
-import ShiftForm from "./ShiftForm"
-import AddMemberForm from "./member/AddMemberForm"
-import ShiftDetails from "./ShiftDetails"
-import Finance from "./Finance"
-import PricingSection from "./Pricing"
-import AddSeatsPage from "./Seat"
-import WhatsAppMessageScreen from "./WhatsappMessage"
-import AttendancePage from "./member/Attendance"
-import AttendanceReport from "./member/AttendaceReport"
-import AllotSeat from "./member/AllotSeat"
-import LogoutScreen from "./Logout"
-import AddLibraryScreen from "./library/AddLibrary"
-
+import React, { useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from "react-native";
+import { createDrawerNavigator, DrawerContentScrollView } from "@react-navigation/drawer";
+import { Ionicons } from "@expo/vector-icons";
+import Collapsible from "react-native-collapsible";
+import { LinearGradient } from "expo-linear-gradient";
+import MembersDashboard from "./MemberDashbord";
+import MemberProfileCard from "./member/MemberProfileCard";
+import ShiftForm from "./ShiftForm";
+import AddMemberForm from "./member/AddMemberForm";
+import ShiftDetails from "./ShiftDetails";
+import Finance from "./Finance";
+import PricingSection from "./Pricing";
+import AddSeatsPage from "./Seat";
+import WhatsAppMessageScreen from "./WhatsappMessage";
+import AttendancePage from "./member/Attendance";
+import AttendanceReport from "./member/AttendaceReport";
+import AllotSeat from "./member/AllotSeat";
+import LogoutScreen from "./Logout";
+import AddLibraryScreen from "./library/AddLibrary";
+import DownloadMembersPage from "./download/MemberData";
 
 type DrawerParamList = {
-  Home: undefined
-  Profile: undefined
-  ShiftForm: undefined
-  AddMember: undefined
-  ShiftDetails: undefined
-  Finance: undefined
-  Pricing: undefined
-  AddSeats: undefined
-  WhatsAppMessage: undefined
-  Attendance: undefined
-  AttendanceReport: undefined
-  AllotSeat: undefined
-  Logout: undefined
-  AddLibrary: undefined
+  Home: undefined;
+  Profile: undefined;
+  ShiftForm: undefined;
+  AddMember: undefined;
+  ShiftDetails: undefined;
+  Finance: undefined;
+  Pricing: undefined;
+  AddSeats: undefined;
+  WhatsAppMessage: undefined;
+  Attendance: undefined;
+  AttendanceReport: undefined;
+  AllotSeat: undefined;
+  Logout: undefined;
+  AddLibrary: undefined;
+  DownloadMembers: undefined;
+};
 
-}
+const Drawer = createDrawerNavigator<DrawerParamList>();
 
-const Drawer = createDrawerNavigator<DrawerParamList>()
+// Collapsible Section Component
+const CollapsibleSection = ({ title, icon, children, isCollapsed, onToggle, isActive }: { title: string; icon: keyof typeof Ionicons.glyphMap; children: React.ReactNode; isCollapsed: boolean; onToggle: () => void; isActive: boolean }) => {
+  return (
+    <View>
+      <TouchableOpacity onPress={onToggle} style={[styles.sectionHeader, isActive && styles.activeSectionHeader]}>
+        <Ionicons name={icon} size={24} color={isActive ? "#6B46C1" : "#555"} />
+        <Text style={[styles.sectionTitle, isActive && styles.activeSectionTitle]}>{title}</Text>
+        <Ionicons
+          name={isCollapsed ? "chevron-down" : "chevron-up"}
+          size={20}
+          color={isActive ? "#6B46C1" : "#555"}
+          style={{ marginLeft: "auto" }}
+        />
+      </TouchableOpacity>
+      <Collapsible collapsed={isCollapsed}>{children}</Collapsible>
+    </View>
+  );
+};
 
 const CustomDrawerContent = (props: any) => {
+  const [sections, setSections] = useState({
+    members: false,
+    shifts: false,
+    finance: false,
+    attendance: false,
+    others: false,
+  });
+
+  const toggleSection = (section: string) => {
+    setSections((prev: any) => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const { state } = props;
+  const activeRoute = state.routes[state.index].name;
+
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }}>
       {/* Drawer Header */}
-      <View style={styles.drawerHeader}>
+      <LinearGradient
+        colors={["#6B46C1", "#8250E8"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.drawerHeader}
+      >
         <Text style={styles.headerText}>Welcome!</Text>
-      </View>
-      {/* Drawer Items */}
-      {props.state.routes.map((route: any, index: number) => {
-        const { options } = props.descriptors[route.key]
-        const label =
-          options.drawerLabel !== undefined
-            ? options.drawerLabel
-            : options.title !== undefined
-              ? options.title
-              : route.name
+        
+      </LinearGradient>
 
-        const isFocused = props.state.index === index
+       <DrawerItem
+          label="Home"
+          icon="home-outline"
+          onPress={() => props.navigation.navigate("Home")}
+          isActive={activeRoute === "Home"}
+        />
 
-        const onPress = () => {
-          const event = props.navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          })
+          <DrawerItem
+          label="Add Library"
+          icon="library-outline"
+          onPress={() => props.navigation.navigate("AddLibrary")}
+          isActive={activeRoute === "AddLibrary"}
+        />
+      {/* Collapsible Sections */}
+      <CollapsibleSection
+        title="Members"
+        icon="people-outline"
+        isCollapsed={sections.members}
+        onToggle={() => toggleSection("members")}
+        isActive={activeRoute === "AddMember" || activeRoute === "Profile" || activeRoute === "DownloadMembers"}
+      >
+        <DrawerItem
+          label="Add Member"
+          icon="person-add-outline"
+          onPress={() => props.navigation.navigate("AddMember")}
+          isActive={activeRoute === "AddMember"}
+        />
+        <DrawerItem
+          label="Profile"
+          icon="person-outline"
+          onPress={() => props.navigation.navigate("Profile")}
+          isActive={activeRoute === "Profile"}
+        />
+        <DrawerItem
+          label="Download Members"
+          icon="download-outline"
+          onPress={() => props.navigation.navigate("DownloadMembers")}
+          isActive={activeRoute === "DownloadMembers"}
+        />
+      </CollapsibleSection>
 
-          if (!isFocused && !event.defaultPrevented) {
-            props.navigation.navigate(route.name)
-          }
-        }
+      <CollapsibleSection
+        title="Shifts"
+        icon="calendar-outline"
+        isCollapsed={sections.shifts}
+        onToggle={() => toggleSection("shifts")}
+        isActive={activeRoute === "ShiftForm" || activeRoute === "ShiftDetails"}
+      >
+        <DrawerItem
+          label="Shift Form"
+          icon="calendar-outline"
+          onPress={() => props.navigation.navigate("ShiftForm")}
+          isActive={activeRoute === "ShiftForm"}
+        />
+        <DrawerItem
+          label="Shift Details"
+          icon="document-text-outline"
+          onPress={() => props.navigation.navigate("ShiftDetails")}
+          isActive={activeRoute === "ShiftDetails"}
+        />
+      </CollapsibleSection>
 
-        return (
-          <React.Fragment key={route.key}>
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-              onPress={onPress}
-              style={[styles.drawerItem, isFocused && styles.activeDrawerItem]}
-            >
-              {options.drawerIcon && options.drawerIcon({ color: isFocused ? "#6B46C1" : "#555", size: 24 })}
-              <Text style={[styles.drawerLabel, isFocused && styles.activeDrawerLabel]}>{label}</Text>
-            </TouchableOpacity>
-            {index < props.state.routes.length - 1 && <View style={styles.divider} />}
-          </React.Fragment>
-        )
-      })}
+      <CollapsibleSection
+        title="Finance"
+        icon="card-outline"
+        isCollapsed={sections.finance}
+        onToggle={() => toggleSection("finance")}
+        isActive={activeRoute === "Finance" || activeRoute === "Pricing"}
+      >
+        <DrawerItem
+          label="Finance"
+          icon="card-outline"
+          onPress={() => props.navigation.navigate("Finance")}
+          isActive={activeRoute === "Finance"}
+        />
+        <DrawerItem
+          label="Pricing"
+          icon="pricetag-outline"
+          onPress={() => props.navigation.navigate("Pricing")}
+          isActive={activeRoute === "Pricing"}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Attendance"
+        icon="checkbox-outline"
+        isCollapsed={sections.attendance}
+        onToggle={() => toggleSection("attendance")}
+        isActive={activeRoute === "Attendance" || activeRoute === "AttendanceReport"}
+      >
+        <DrawerItem
+          label="Attendance"
+          icon="checkbox-outline"
+          onPress={() => props.navigation.navigate("Attendance")}
+          isActive={activeRoute === "Attendance"}
+        />
+        <DrawerItem
+          label="Attendance Report"
+          icon="bar-chart-outline"
+          onPress={() => props.navigation.navigate("AttendanceReport")}
+          isActive={activeRoute === "AttendanceReport"}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Others"
+        icon="ellipsis-horizontal-outline"
+        isCollapsed={sections.others}
+        onToggle={() => toggleSection("others")}
+        isActive={ activeRoute === "WhatsAppMessage" || activeRoute === "Logout"}
+      >
+      
+        <DrawerItem
+          label="WhatsApp Message"
+          icon="logo-whatsapp"
+          onPress={() => props.navigation.navigate("WhatsAppMessage")}
+          isActive={activeRoute === "WhatsAppMessage"}
+        />
+        <DrawerItem
+          label="Logout"
+          icon="log-out-outline"
+          onPress={() => props.navigation.navigate("Logout")}
+          isActive={activeRoute === "Logout"}
+        />
+      </CollapsibleSection>
     </DrawerContentScrollView>
-  )
-}
+  );
+};
+
+// Drawer Item Component
+const DrawerItem = ({ label, icon, onPress, isActive }: { label: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void; isActive: boolean }) => {
+  return (
+    <TouchableOpacity onPress={onPress} style={[styles.drawerItem, isActive && styles.activeDrawerItem]}>
+      <Ionicons name={icon} size={24} color={isActive ? "#6B46C1" : "#555"} />
+      <Text style={[styles.drawerLabel, isActive && styles.activeDrawerLabel]}>{label}</Text>
+    </TouchableOpacity>
+  );
+};
 
 const Sidebar = () => {
   return (
@@ -111,9 +250,6 @@ const Sidebar = () => {
           marginHorizontal: 8,
           marginVertical: 4,
         },
-        drawerIcon: ({ focused, size, color }) => (
-          <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
-        ),
         drawerContentStyle: {
           paddingTop: 0,
         },
@@ -122,118 +258,29 @@ const Sidebar = () => {
         },
       }}
     >
-      <Drawer.Screen
-        name="Home"
-        component={MembersDashboard}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
-        }}
-      />
-      
-      <Drawer.Screen
-        name="Profile"
-        component={MemberProfileCard}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
-        }}
-      />
-      <Drawer.Screen
-        name="AddLibrary"
-        component={AddLibraryScreen}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="library-outline" size={size} color={color} />,
-        }}
-      />
-       <Drawer.Screen
-        name="AddMember"
-        component={AddMemberForm}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="person-add-outline" size={size} color={color} />,
-        }}
-      />
-      <Drawer.Screen
-        name="ShiftForm"
-        component={ShiftForm}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
-        }}
-      />
-
-      <Drawer.Screen
-        name="ShiftDetails"
-        component={ShiftDetails}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} />,
-        }}
-      />
-    
-      <Drawer.Screen
-        name="AddSeats"
-        component={AddSeatsPage}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="add-circle-outline" size={size} color={color} />,
-        }}
-      />
-       <Drawer.Screen
-        name="AllotSeat"
-        component={AllotSeat}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="attach" size={size} color={color} />,
-        }}
-      />
-      
-      <Drawer.Screen
-        name="Attendance"
-        component={AttendancePage}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="checkbox-outline" size={size} color={color} />,
-        }}
-      />
-      <Drawer.Screen
-        name="AttendanceReport"
-        component={AttendanceReport}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color} />,
-        }}
-      />
-      <Drawer.Screen
-        name="WhatsAppMessage"
-        component={WhatsAppMessageScreen}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="logo-whatsapp" size={size} color={color} />,
-        }}
-      />
-     
-        <Drawer.Screen
-        name="Finance"
-        component={Finance}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} />,
-        }}
-        />
-        <Drawer.Screen
-        name="Pricing"
-        component={PricingSection}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="pricetag-outline" size={size} color={color} />,
-        }}
-       />
-       <Drawer.Screen
-        name="Logout"
-        component={LogoutScreen}
-        options={{
-          drawerIcon: ({ color, size }) => <Ionicons name="log-out-outline" size={size} color={color} />,
-        }}
-       />
-       
+      <Drawer.Screen name="Home" component={MembersDashboard} />
+      <Drawer.Screen name="Profile" component={MemberProfileCard} />
+      <Drawer.Screen name="AddLibrary" component={AddLibraryScreen} />
+      <Drawer.Screen name="AddMember" component={AddMemberForm} />
+      <Drawer.Screen name="ShiftForm" component={ShiftForm} />
+      <Drawer.Screen name="ShiftDetails" component={ShiftDetails} />
+      <Drawer.Screen name="AddSeats" component={AddSeatsPage} />
+      <Drawer.Screen name="AllotSeat" component={AllotSeat} />
+      <Drawer.Screen name="Attendance" component={AttendancePage} />
+      <Drawer.Screen name="AttendanceReport" component={AttendanceReport} />
+      <Drawer.Screen name="WhatsAppMessage" component={WhatsAppMessageScreen} />
+      <Drawer.Screen name="Finance" component={Finance} />
+      <Drawer.Screen name="Pricing" component={PricingSection} />
+      <Drawer.Screen name="Logout" component={LogoutScreen} />
+      <Drawer.Screen name="DownloadMembers" component={DownloadMembersPage} />
     </Drawer.Navigator>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   drawerHeader: {
     padding: 24,
-    backgroundColor: "#6B46C1", // Gradient-like color
+   marginTop: 40,
     marginBottom: 16,
     borderBottomRightRadius: 20,
     shadowColor: "#000",
@@ -247,18 +294,42 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
   },
-  drawerItem: {
+  headerSubtext: {
+    color: "#fff",
+    fontSize: 14,
+    marginTop: 4,
+  },
+  sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
+  },
+  activeSectionHeader: {
+    backgroundColor: "#6B46C110",
+    borderRadius: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#555",
+    marginLeft: 10,
+  },
+  activeSectionTitle: {
+    color: "#6B46C1",
+  },
+  drawerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 32,
   },
   activeDrawerItem: {
     backgroundColor: "#6B46C110",
     borderRadius: 8,
   },
   drawerLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "500",
     color: "#555",
     marginLeft: 10,
@@ -266,16 +337,6 @@ const styles = StyleSheet.create({
   activeDrawerLabel: {
     color: "#6B46C1",
   },
-  icon: {
-    marginRight: 8,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#e0e0e0",
-    marginHorizontal: 16,
-    marginVertical: 4,
-  },
-})
+});
 
-export default Sidebar
-
+export default Sidebar;
