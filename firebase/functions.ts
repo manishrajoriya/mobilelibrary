@@ -648,14 +648,12 @@ export const addSeats = async ({ currentUser, numberOfSeats, libraryId }: { curr
     if (!currentUser) {
       throw new Error("User not authenticated. Redirecting to sign-in...")
     }
-    const seatCollection = collection(db, "seats");
-    
-    // Get the current number of seats
-    const seatsSnapshot = await getDocs(seatCollection);
-    const currentSeatCount = seatsSnapshot.size;
+    const q = query(collection(db, "seats"), where("admin", "==", currentUser.uid), where("libraryId", "==", libraryId))
+    const seatSnapshot = await getDocs(q)
+    const currentSeatCount = seatSnapshot.size
 
     for (let i = 0; i < numberOfSeats; i++) {
-      await addDoc(seatCollection, {
+      await addDoc(collection(db, "seats"), {
         seatId: `seat-${currentSeatCount + i + 1}`,
         isAllocated: false,
         allocatedTo: null,
@@ -670,6 +668,22 @@ export const addSeats = async ({ currentUser, numberOfSeats, libraryId }: { curr
   } catch (error) {
     console.error("Error adding seats:", error);
     throw error;
+  }
+}
+
+export const deleteSeat = async (seatId: string) => {
+  try {
+    const seatDoc = doc(collection(db, "seats"), seatId);
+    await deleteDoc(seatDoc);
+    return {
+      success: true,
+      message: `Seat ${seatId} deleted successfully`
+    };
+  } catch (error) {
+   return {
+     success: false,
+     message: `Error deleting seat: ${error}`
+   }
   }
 }
 
@@ -812,3 +826,59 @@ export const fetchAttendanceByMemberId = async (memberId: string) => {
     throw error;
   }
 }
+
+ 
+
+ export const addItem = async ({currentUser, libraryId, description, amount, type }: {currentUser: any, libraryId: string, description: string, amount: number, type: string}) => {
+    try {
+      const docRef = await addDoc(collection(db, "finance"), {
+        userId: currentUser.uid,
+        libraryId,
+        description,
+        amount,
+        type,
+      });
+      return {id: docRef.id, description, amount, type }
+    } catch (error) {
+      console.error("Error adding item:", error);
+    }
+  };
+
+export const updateItem = async (item: any) => {
+    try {
+      if (item.id) {
+        await updateDoc(doc(db, "finance", item.id), {
+          description: item.description,
+          amount: item.amount,
+          type: item.type,
+        });
+        return item
+      }
+    } catch (error) {
+      console.error("Error updating item:", error);
+    }
+  };
+
+export const fetchItems = async ({currentUser, libraryId}: {currentUser: any, libraryId: string})=> {
+try {
+  const q = query(collection(db, "finance"), where("userId", "==", currentUser.uid));
+  const querySnapshot = await getDocs(q);
+  const data = querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    description: doc.data().description,
+    amount: doc.data().amount,
+    type: doc.data().type,
+  })) 
+  return data
+} catch (error) {
+  
+}
+}
+
+export   const deleteItem = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "finance", id));
+    } catch (error) {
+      console.error("Error deleting item:", error);
+    }
+  };

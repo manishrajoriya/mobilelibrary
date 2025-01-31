@@ -8,6 +8,7 @@ import * as XLSX from "xlsx";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { Ionicons } from "@expo/vector-icons";
+import { formatDate } from "./AddMemberForm";
 
 interface Member {
   id: string;
@@ -97,7 +98,7 @@ export default function MemberPaymentList() {
 
       const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
 
-      const fileName = FileSystem.documentDirectory + "member_payment_summary.xlsx";
+      const fileName = FileSystem.documentDirectory + `member_payment_summary ${new Date().toDateString()}.xlsx`;
       await FileSystem.writeAsStringAsync(fileName, wbout, {
         encoding: FileSystem.EncodingType.Base64,
       });
@@ -136,7 +137,7 @@ export default function MemberPaymentList() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Member Payment Summary</Text>
+        <Text style={styles.title}>Payment Summary</Text>
         <TouchableOpacity style={styles.downloadButton} onPress={generateExcel}>
           <Ionicons name="download-outline" size={24} color="#fff" />
         </TouchableOpacity>

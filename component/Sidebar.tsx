@@ -15,10 +15,11 @@ import AddSeatsPage from "./Seat";
 import WhatsAppMessageScreen from "./WhatsappMessage";
 import AttendancePage from "./member/Attendance";
 import AttendanceReport from "./member/AttendaceReport";
-import AllotSeat from "./member/AllotSeat";
+import AllocateSeatsPage from "./member/AllotSeat";
 import LogoutScreen from "./Logout";
 import AddLibraryScreen from "./library/AddLibrary";
 import DownloadMembersPage from "./download/MemberData";
+import MemberPaymentList from "./member/MemberPaymentList.tsx";
 
 type DrawerParamList = {
   Home: undefined;
@@ -36,6 +37,7 @@ type DrawerParamList = {
   Logout: undefined;
   AddLibrary: undefined;
   DownloadMembers: undefined;
+  MemberPayment: undefined;
 };
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
@@ -85,29 +87,47 @@ const CustomDrawerContent = (props: any) => {
         style={styles.drawerHeader}
       >
         <Text style={styles.headerText}>Welcome!</Text>
-        
       </LinearGradient>
 
-       <DrawerItem
-          label="Home"
-          icon="home-outline"
-          onPress={() => props.navigation.navigate("Home")}
-          isActive={activeRoute === "Home"}
-        />
+      {/* Direct Drawer Items */}
+      <DrawerItem
+        label="Home"
+        icon="home-outline"
+        onPress={() => props.navigation.navigate("Home")}
+        isActive={activeRoute === "Home"}
+      />
+      <DrawerItem
+        label="Add Library"
+        icon="library-outline"
+        onPress={() => props.navigation.navigate("AddLibrary")}
+        isActive={activeRoute === "AddLibrary"}
+      />
+      <DrawerItem
+        label="Download Members"
+        icon="download-outline"
+        onPress={() => props.navigation.navigate("DownloadMembers")}
+        isActive={activeRoute === "DownloadMembers"}
+      />
+      <DrawerItem
+        label="Add Seats"
+        icon="add-outline"
+        onPress={() => props.navigation.navigate("AddSeats")}
+        isActive={activeRoute === "AddSeats"}
+      />
+      <DrawerItem
+        label="Allot Seat"
+        icon="person-add-outline"
+        onPress={() => props.navigation.navigate("AllotSeat")}
+        isActive={activeRoute === "AllotSeat"}
+      />
 
-          <DrawerItem
-          label="Add Library"
-          icon="library-outline"
-          onPress={() => props.navigation.navigate("AddLibrary")}
-          isActive={activeRoute === "AddLibrary"}
-        />
       {/* Collapsible Sections */}
       <CollapsibleSection
         title="Members"
         icon="people-outline"
         isCollapsed={sections.members}
         onToggle={() => toggleSection("members")}
-        isActive={activeRoute === "AddMember" || activeRoute === "Profile" || activeRoute === "DownloadMembers"}
+        isActive={activeRoute === "AddMember" || activeRoute === "Profile" || activeRoute === "MemberPayment"}
       >
         <DrawerItem
           label="Add Member"
@@ -122,10 +142,10 @@ const CustomDrawerContent = (props: any) => {
           isActive={activeRoute === "Profile"}
         />
         <DrawerItem
-          label="Download Members"
-          icon="download-outline"
-          onPress={() => props.navigation.navigate("DownloadMembers")}
-          isActive={activeRoute === "DownloadMembers"}
+          label="Member Payment"
+          icon="card-outline"
+          onPress={() => props.navigation.navigate("MemberPayment")}
+          isActive={activeRoute === "MemberPayment"}
         />
       </CollapsibleSection>
 
@@ -197,9 +217,8 @@ const CustomDrawerContent = (props: any) => {
         icon="ellipsis-horizontal-outline"
         isCollapsed={sections.others}
         onToggle={() => toggleSection("others")}
-        isActive={ activeRoute === "WhatsAppMessage" || activeRoute === "Logout"}
+        isActive={activeRoute === "WhatsAppMessage" || activeRoute === "Logout"}
       >
-      
         <DrawerItem
           label="WhatsApp Message"
           icon="logo-whatsapp"
@@ -265,7 +284,7 @@ const Sidebar = () => {
       <Drawer.Screen name="ShiftForm" component={ShiftForm} />
       <Drawer.Screen name="ShiftDetails" component={ShiftDetails} />
       <Drawer.Screen name="AddSeats" component={AddSeatsPage} />
-      <Drawer.Screen name="AllotSeat" component={AllotSeat} />
+      <Drawer.Screen name="AllotSeat" component={AllocateSeatsPage} />
       <Drawer.Screen name="Attendance" component={AttendancePage} />
       <Drawer.Screen name="AttendanceReport" component={AttendanceReport} />
       <Drawer.Screen name="WhatsAppMessage" component={WhatsAppMessageScreen} />
@@ -273,6 +292,7 @@ const Sidebar = () => {
       <Drawer.Screen name="Pricing" component={PricingSection} />
       <Drawer.Screen name="Logout" component={LogoutScreen} />
       <Drawer.Screen name="DownloadMembers" component={DownloadMembersPage} />
+      <Drawer.Screen name="MemberPayment" component={MemberPaymentList} />
     </Drawer.Navigator>
   );
 };

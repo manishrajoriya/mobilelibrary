@@ -1,60 +1,77 @@
-import type React from "react"
-import { useState, useEffect } from "react"
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, FlatList } from "react-native"
-import { addSeats, fetchSeats } from "@/firebase/functions"
-import { useNavigation } from "@react-navigation/native"
-import useStore from "@/hooks/store"
+import type React from "react";
+import { useState, useEffect } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, FlatList } from "react-native";
+import { addSeats, fetchSeats, deleteSeat } from "@/firebase/functions";
+import { useNavigation } from "@react-navigation/native";
+import useStore from "@/hooks/store";
 
 interface Seat {
-  id: string
-  seatId: string
-  isAllocated: boolean
+  id: string;
+  seatId: string;
+  isAllocated: boolean;
 }
 
 const AddSeatsPage: React.FC = () => {
-  const [numberOfSeats, setNumberOfSeats] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [seats, setSeats] = useState<Seat[]>([])
-  const navigation = useNavigation()
+  const [numberOfSeats, setNumberOfSeats] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [seats, setSeats] = useState<Seat[]>([]);
+  const navigation = useNavigation();
 
   const currentUser = useStore((state: any) => state.currentUser);
   const activeLibrary = useStore((state: any) => state.activeLibrary);
 
   useEffect(() => {
-    loadSeats()
-  }, [])
+    loadSeats();
+  }, []);
 
   const loadSeats = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const fetchedSeats = await fetchSeats({ currentUser: currentUser, libraryId: activeLibrary.id })
-      setSeats(fetchedSeats)
+      const fetchedSeats = await fetchSeats({ currentUser: currentUser, libraryId: activeLibrary.id });
+      setSeats(fetchedSeats);
     } catch (error) {
-      console.error("Error fetching seats:", error)
-      Alert.alert("Error", "Failed to fetch seats. Please try again.")
+      console.error("Error fetching seats:", error);
+      Alert.alert("Error", "Failed to fetch seats. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleAddSeats = async () => {
     if (!numberOfSeats || Number.parseInt(numberOfSeats) <= 0) {
-      Alert.alert("Error", "Please enter a valid number of seats.")
-      return
+      Alert.alert("Error", "Please enter a valid number of seats.");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
-      const result = await addSeats({ numberOfSeats : Number.parseInt(numberOfSeats), currentUser, libraryId: activeLibrary.id })
-      Alert.alert("Success", result)
-      setNumberOfSeats("")
-      await loadSeats() // Reload seats after adding new ones
+      const result = await addSeats({ numberOfSeats: Number.parseInt(numberOfSeats), currentUser, libraryId: activeLibrary.id });
+      Alert.alert("Success", result);
+      setNumberOfSeats("");
+      await loadSeats(); // Reload seats after adding new ones
     } catch (error) {
-      Alert.alert("Error: Something went wrong")
+      Alert.alert("Error: Something went wrong");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  const handleDeleteSeat = async (seatId: string) => {
+    setLoading(true);
+    try {
+      const result = await deleteSeat(seatId);
+      if (result.success) {
+        Alert.alert("Success", result.message);
+        await loadSeats(); // Reload seats after deletion
+      } else {
+        Alert.alert("Error", result.message);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to delete seat. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderSeat = ({ item }: { item: Seat }) => (
     <View style={styles.seatItem}>
@@ -62,8 +79,15 @@ const AddSeatsPage: React.FC = () => {
       <Text style={[styles.statusText, item.isAllocated ? styles.allocatedStatus : styles.availableStatus]}>
         {item.isAllocated ? "Allocated" : "Available"}
       </Text>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleDeleteSeat(item.id)}
+        disabled={loading}
+      >
+        <Text style={styles.deleteButtonText}>Delete</Text>
+      </TouchableOpacity>
     </View>
-  )
+  );
 
   return (
     <View style={styles.container}>
@@ -94,8 +118,8 @@ const AddSeatsPage: React.FC = () => {
         <Text style={styles.backButtonText}>Back to Seat Allocation</Text>
       </TouchableOpacity>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -174,6 +198,16 @@ const styles = StyleSheet.create({
   availableStatus: {
     color: "green",
   },
+  deleteButton: {
+    backgroundColor: "#dc3545",
+    padding: 8,
+    borderRadius: 6,
+  },
+  deleteButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
   backButton: {
     backgroundColor: "#6c757d",
     padding: 16,
@@ -186,7 +220,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-})
+});
 
-export default AddSeatsPage
-
+export default AddSeatsPage;

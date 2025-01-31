@@ -9,7 +9,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { db, auth} from "../utils/firebaseConfig" // Import Firebase config and auth
+import { db, auth } from "@/utils/firebaseConfig"; // Import Firebase config and auth
 import {
   collection,
   addDoc,
@@ -21,6 +21,7 @@ import {
   where,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import useStore from "@/hooks/store";
 
 // Define the shape of each item
 interface Item {
@@ -29,6 +30,7 @@ interface Item {
   readonly amount: number;
   readonly type: "Earning" | "Expense";
   readonly userId: string;
+ 
 }
 
 // Custom hook for Firebase operations
@@ -36,9 +38,12 @@ const useFirebaseItems = (userId: string | null) => {
   const [items, setItems] = useState<Item[]>([]);
   const itemsCollection = collection(db, "finance");
 
+  const activeLibrary = useStore((state: any) => state.activeLibrary);
+  const currentUser = useStore((state: any) => state.currentUser);
+
   const fetchItems = async (uid: string) => {
     try {
-      const q = query(itemsCollection, where("userId", "==", uid));
+      const q = query(itemsCollection, where("userId", "==", currentUser.uid), where("libraryId", "==", activeLibrary.id));
       const querySnapshot = await getDocs(q);
       const data: Item[] = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -52,7 +57,7 @@ const useFirebaseItems = (userId: string | null) => {
 
   const addItem = async (item: Omit<Item, "id">) => {
     try {
-      const docRef = await addDoc(itemsCollection, item);
+      const docRef = await addDoc(itemsCollection, { ...item, userId: currentUser.uid, libraryId: activeLibrary.id });
       setItems((prevItems) => [...prevItems, { ...item, id: docRef.id }]);
     } catch (error) {
       console.error("Error adding item:", error);
@@ -344,14 +349,14 @@ const styles = StyleSheet.create({
   },
   active: {
     backgroundColor: "#e0f7fa",
-    borderColor: "#6B46C1",
+    borderColor: "#00796b",
   },
   toggleText: {
     fontSize: 16,
     color: "#333",
   },
   addButton: {
-    backgroundColor: "#6B46C1",
+    backgroundColor: "#34A853",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
